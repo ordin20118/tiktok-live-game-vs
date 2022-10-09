@@ -17,7 +17,6 @@ def on_open(ws):
     print("Opened connection")
 
 
-
 async def get_connect():
     async with websockets.connect("ws://localhost:30001") as websocket:
         # for i in range(1,100,1):
@@ -33,6 +32,8 @@ async def get_connect():
         
         # print("data received from server : " + data_rcv); 
 
-# connect to server 
-asyncio.get_event_loop().run_until_complete(get_connect());
-#asyncio.get_event_loop().run_forever(get_connect());
+
+if __name__ == '__main__':
+    # connect to server 
+    asyncio.get_event_loop().run_until_complete(get_connect());
+    #asyncio.get_event_loop().run_forever(get_connect());
