@@ -2,6 +2,7 @@ import pygame
 import pygame.mixer
 from websocket_client import client
 from game.sprite import characters
+from game.dataload import *
 
 # 스크린 전체 크기 지정
 SCREEN_WIDTH = 475
@@ -28,15 +29,23 @@ class Game:
         # - 게임 시간, 게임 점수 등..
 
         self.SCREEN = pygame.display.set_mode((SCREEN_WIDTH, SCREEN_HEIGHT)) #화면 크기 설정
+        self.SCREEN_SURFACE = pygame.Surface((SCREEN_WIDTH, SCREEN_HEIGHT))
         self.clock = pygame.time.Clock() 
         self.FPS = 60
         self.BLUE = (0, 0, 255)
 
         # sprite group 설정
-        player_group = pygame.sprite.Group()
+        self.sprite_group = pygame.sprite.Group()
+        self.left_group = pygame.sprite.Group()
+        self.right_group = pygame.sprite.Group()
+
+        self.soldier_size = (60, 60)
 
 
         # 리소스 불러오기
+        import_soldier_left(self.soldier_size)
+        import_soldier_right(self.soldier_size)
+        
 
         # 효과음 로드
 
@@ -47,19 +56,12 @@ class Game:
     def run(self):
 
         # 생성된 player를 그룹에 넣기
-        self.sprite_group = pygame.sprite.Group()
-        self.left_group = pygame.sprite.Group()
-        self.right_group = pygame.sprite.Group()
-        
-        #all_sprites = pygame.sprite.Group(player)  
-
-        auto_player_spawn_term = 160
+        auto_player_spawn_term = 100 # 160
         auto_player_spawn_time = 0
 
         self.is_running = True
 
-
-        new_left_player = characters.AnimatedSprite(position=LEFT_SPAWN_POSITION, movement=(1,0), group='left', hp=100, power=1, name='first man')
+        new_left_player = characters.SoldierSprite(size=self.soldier_size, position=LEFT_SPAWN_POSITION, movement=(1,0), group='left', hp=100, power=1, name='first man', images=solider_images_left, game=self)
         self.left_group.add(new_left_player)
         self.sprite_group.add(new_left_player)
 
@@ -72,11 +74,11 @@ class Game:
             mt = self.clock.tick(self.FPS) / 1000 # 1000dmf 나누어줘서 초단위로 변경하여 반환
 
             if auto_player_spawn_time == auto_player_spawn_term:
-                new_left_player = characters.AnimatedSprite(position=LEFT_SPAWN_POSITION, movement=(1,0), group='left', hp=100, power=1, name='left_%d'%auto_player_num)
+                new_left_player = characters.SoldierSprite(size=self.soldier_size, position=LEFT_SPAWN_POSITION, movement=(1,0), group='left', hp=100, power=1, name='left_%d'%auto_player_num, images=solider_images_left, game=self)
                 self.left_group.add(new_left_player)
                 self.sprite_group.add(new_left_player)
                 
-                new_right_player = characters.AnimatedSprite(position=RIGHT_SPAWN_POSITION, movement=(-1,0), group='right', hp=100, power=1, name='right_%d'%auto_player_num)
+                new_right_player = characters.SoldierSprite(size=self.soldier_size, position=RIGHT_SPAWN_POSITION, movement=(-1,0), group='right', hp=100, power=1, name='right_%d'%auto_player_num, images=soldier_images_right, game=self)
                 self.right_group.add(new_right_player)
                 self.sprite_group.add(new_right_player)
                 auto_player_spawn_time = 0
@@ -102,6 +104,10 @@ class Game:
             # 배경색
             self.SCREEN.fill(self.BLUE) 
 
+            # 객체별로 필요한 그림 그려주기
+            for sprite in self.sprite_group:
+                sprite.draw()
+            
             # 모든 sprite 화면에 그려주기
             self.sprite_group.draw(self.SCREEN)
             pygame.display.update() #모든 화면 그리기 업데이트

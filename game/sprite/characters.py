@@ -67,18 +67,18 @@ class BaseObject:
         objects.remove(self)
         del(self)
 
-class AnimatedSprite(pygame.sprite.Sprite, BaseObject):
+class SoldierSprite(pygame.sprite.Sprite, BaseObject):
 
     # state
     # 0: idle
     # 1: move
     # 2: attack
     # 3: die
+    def __init__(self, size, position, movement, group, hp, power, name, images, game):
 
-    def __init__(self, position, movement, group, hp, power, name):
+        super(SoldierSprite, self).__init__()
 
-        super(AnimatedSprite, self).__init__()
-
+        self.game = game
         self.name = name
         self.state = 1
         self.hp = hp
@@ -90,52 +90,52 @@ class AnimatedSprite(pygame.sprite.Sprite, BaseObject):
         # 이미지를 Rect안에 넣기 위해 Rect의 크기 지정
         # 이미지의 크기와 같게 하거나, 크기를 다르게 한다면 pygame.transform.scale을 사용하여 rect 안에
         # 이미지를 맞추도록 한다.
-        size = (60, 60)
+        #size = (60, 60)
 
-        # 여러장의 이미지를 리스트로 저장한다. 이미지 경로는 자신들의 경로를 사용한다.
-        self.images = []
-        if group == 'right':
-            self.images.append(pygame.transform.flip(pygame.transform.scale(pygame.image.load('game/res/character/knight/png/Run_1.png'), size), True, False))
-            self.images.append(pygame.transform.flip(pygame.transform.scale(pygame.image.load('game/res/character/knight/png/Run_2.png'), size), True, False))
-            self.images.append(pygame.transform.flip(pygame.transform.scale(pygame.image.load('game/res/character/knight/png/Run_3.png'), size), True, False))
-            self.images.append(pygame.transform.flip(pygame.transform.scale(pygame.image.load('game/res/character/knight/png/Run_4.png'), size), True, False))
-            self.images.append(pygame.transform.flip(pygame.transform.scale(pygame.image.load('game/res/character/knight/png/Run_5.png'), size), True, False))
-            self.images.append(pygame.transform.flip(pygame.transform.scale(pygame.image.load('game/res/character/knight/png/Run_6.png'), size), True, False))
-            self.images.append(pygame.transform.flip(pygame.transform.scale(pygame.image.load('game/res/character/knight/png/Run_7.png'), size), True, False))
-            self.images.append(pygame.transform.flip(pygame.transform.scale(pygame.image.load('game/res/character/knight/png/Run_8.png'), size), True, False))
-            self.images.append(pygame.transform.flip(pygame.transform.scale(pygame.image.load('game/res/character/knight/png/Run_9.png'), size), True, False))
-            self.images.append(pygame.transform.flip(pygame.transform.scale(pygame.image.load('game/res/character/knight/png/Run_10.png'), size), True, False))
-            self.images.append(pygame.transform.flip(pygame.transform.scale(pygame.image.load('game/res/character/knight/png/Attack_1.png'), size), True, False))
-            self.images.append(pygame.transform.flip(pygame.transform.scale(pygame.image.load('game/res/character/knight/png/Attack_2.png'), size), True, False))
-            self.images.append(pygame.transform.flip(pygame.transform.scale(pygame.image.load('game/res/character/knight/png/Attack_3.png'), size), True, False))
-            self.images.append(pygame.transform.flip(pygame.transform.scale(pygame.image.load('game/res/character/knight/png/Attack_4.png'), size), True, False))
-            self.images.append(pygame.transform.flip(pygame.transform.scale(pygame.image.load('game/res/character/knight/png/Attack_5.png'), size), True, False))
-            self.images.append(pygame.transform.flip(pygame.transform.scale(pygame.image.load('game/res/character/knight/png/Attack_6.png'), size), True, False))
-            self.images.append(pygame.transform.flip(pygame.transform.scale(pygame.image.load('game/res/character/knight/png/Attack_7.png'), size), True, False))
-            self.images.append(pygame.transform.flip(pygame.transform.scale(pygame.image.load('game/res/character/knight/png/Attack_8.png'), size), True, False))
-            self.images.append(pygame.transform.flip(pygame.transform.scale(pygame.image.load('game/res/character/knight/png/Attack_9.png'), size), True, False))
-            self.images.append(pygame.transform.flip(pygame.transform.scale(pygame.image.load('game/res/character/knight/png/Attack_10.png'), size), True, False))
-        else:
-            self.images.append(pygame.transform.scale(pygame.image.load('game/res/character/knight/png/Run_1.png'), size))
-            self.images.append(pygame.transform.scale(pygame.image.load('game/res/character/knight/png/Run_2.png'), size))
-            self.images.append(pygame.transform.scale(pygame.image.load('game/res/character/knight/png/Run_3.png'), size))
-            self.images.append(pygame.transform.scale(pygame.image.load('game/res/character/knight/png/Run_4.png'), size))
-            self.images.append(pygame.transform.scale(pygame.image.load('game/res/character/knight/png/Run_5.png'), size))
-            self.images.append(pygame.transform.scale(pygame.image.load('game/res/character/knight/png/Run_6.png'), size))
-            self.images.append(pygame.transform.scale(pygame.image.load('game/res/character/knight/png/Run_7.png'), size))
-            self.images.append(pygame.transform.scale(pygame.image.load('game/res/character/knight/png/Run_8.png'), size))
-            self.images.append(pygame.transform.scale(pygame.image.load('game/res/character/knight/png/Run_9.png'), size))
-            self.images.append(pygame.transform.scale(pygame.image.load('game/res/character/knight/png/Run_10.png'), size))
-            self.images.append(pygame.transform.scale(pygame.image.load('game/res/character/knight/png/Attack_1.png'), size))
-            self.images.append(pygame.transform.scale(pygame.image.load('game/res/character/knight/png/Attack_2.png'), size))
-            self.images.append(pygame.transform.scale(pygame.image.load('game/res/character/knight/png/Attack_3.png'), size))
-            self.images.append(pygame.transform.scale(pygame.image.load('game/res/character/knight/png/Attack_4.png'), size))
-            self.images.append(pygame.transform.scale(pygame.image.load('game/res/character/knight/png/Attack_5.png'), size))
-            self.images.append(pygame.transform.scale(pygame.image.load('game/res/character/knight/png/Attack_6.png'), size))
-            self.images.append(pygame.transform.scale(pygame.image.load('game/res/character/knight/png/Attack_7.png'), size))
-            self.images.append(pygame.transform.scale(pygame.image.load('game/res/character/knight/png/Attack_8.png'), size))
-            self.images.append(pygame.transform.scale(pygame.image.load('game/res/character/knight/png/Attack_9.png'), size))
-            self.images.append(pygame.transform.scale(pygame.image.load('game/res/character/knight/png/Attack_10.png'), size))
+        self.images = images
+        # if group == 'right':
+        #     self.images.append(pygame.transform.flip(pygame.transform.scale(pygame.image.load('game/res/character/knight/png/Run_1.png'), size), True, False))
+        #     self.images.append(pygame.transform.flip(pygame.transform.scale(pygame.image.load('game/res/character/knight/png/Run_2.png'), size), True, False))
+        #     self.images.append(pygame.transform.flip(pygame.transform.scale(pygame.image.load('game/res/character/knight/png/Run_3.png'), size), True, False))
+        #     self.images.append(pygame.transform.flip(pygame.transform.scale(pygame.image.load('game/res/character/knight/png/Run_4.png'), size), True, False))
+        #     self.images.append(pygame.transform.flip(pygame.transform.scale(pygame.image.load('game/res/character/knight/png/Run_5.png'), size), True, False))
+        #     self.images.append(pygame.transform.flip(pygame.transform.scale(pygame.image.load('game/res/character/knight/png/Run_6.png'), size), True, False))
+        #     self.images.append(pygame.transform.flip(pygame.transform.scale(pygame.image.load('game/res/character/knight/png/Run_7.png'), size), True, False))
+        #     self.images.append(pygame.transform.flip(pygame.transform.scale(pygame.image.load('game/res/character/knight/png/Run_8.png'), size), True, False))
+        #     self.images.append(pygame.transform.flip(pygame.transform.scale(pygame.image.load('game/res/character/knight/png/Run_9.png'), size), True, False))
+        #     self.images.append(pygame.transform.flip(pygame.transform.scale(pygame.image.load('game/res/character/knight/png/Run_10.png'), size), True, False))
+        #     self.images.append(pygame.transform.flip(pygame.transform.scale(pygame.image.load('game/res/character/knight/png/Attack_1.png'), size), True, False))
+        #     self.images.append(pygame.transform.flip(pygame.transform.scale(pygame.image.load('game/res/character/knight/png/Attack_2.png'), size), True, False))
+        #     self.images.append(pygame.transform.flip(pygame.transform.scale(pygame.image.load('game/res/character/knight/png/Attack_3.png'), size), True, False))
+        #     self.images.append(pygame.transform.flip(pygame.transform.scale(pygame.image.load('game/res/character/knight/png/Attack_4.png'), size), True, False))
+        #     self.images.append(pygame.transform.flip(pygame.transform.scale(pygame.image.load('game/res/character/knight/png/Attack_5.png'), size), True, False))
+        #     self.images.append(pygame.transform.flip(pygame.transform.scale(pygame.image.load('game/res/character/knight/png/Attack_6.png'), size), True, False))
+        #     self.images.append(pygame.transform.flip(pygame.transform.scale(pygame.image.load('game/res/character/knight/png/Attack_7.png'), size), True, False))
+        #     self.images.append(pygame.transform.flip(pygame.transform.scale(pygame.image.load('game/res/character/knight/png/Attack_8.png'), size), True, False))
+        #     self.images.append(pygame.transform.flip(pygame.transform.scale(pygame.image.load('game/res/character/knight/png/Attack_9.png'), size), True, False))
+        #     self.images.append(pygame.transform.flip(pygame.transform.scale(pygame.image.load('game/res/character/knight/png/Attack_10.png'), size), True, False))
+            
+        # else:
+        #     self.images.append(pygame.transform.scale(pygame.image.load('game/res/character/knight/png/Run_1.png'), size))
+        #     self.images.append(pygame.transform.scale(pygame.image.load('game/res/character/knight/png/Run_2.png'), size))
+        #     self.images.append(pygame.transform.scale(pygame.image.load('game/res/character/knight/png/Run_3.png'), size))
+        #     self.images.append(pygame.transform.scale(pygame.image.load('game/res/character/knight/png/Run_4.png'), size))
+        #     self.images.append(pygame.transform.scale(pygame.image.load('game/res/character/knight/png/Run_5.png'), size))
+        #     self.images.append(pygame.transform.scale(pygame.image.load('game/res/character/knight/png/Run_6.png'), size))
+        #     self.images.append(pygame.transform.scale(pygame.image.load('game/res/character/knight/png/Run_7.png'), size))
+        #     self.images.append(pygame.transform.scale(pygame.image.load('game/res/character/knight/png/Run_8.png'), size))
+        #     self.images.append(pygame.transform.scale(pygame.image.load('game/res/character/knight/png/Run_9.png'), size))
+        #     self.images.append(pygame.transform.scale(pygame.image.load('game/res/character/knight/png/Run_10.png'), size))
+        #     self.images.append(pygame.transform.scale(pygame.image.load('game/res/character/knight/png/Attack_1.png'), size))
+        #     self.images.append(pygame.transform.scale(pygame.image.load('game/res/character/knight/png/Attack_2.png'), size))
+        #     self.images.append(pygame.transform.scale(pygame.image.load('game/res/character/knight/png/Attack_3.png'), size))
+        #     self.images.append(pygame.transform.scale(pygame.image.load('game/res/character/knight/png/Attack_4.png'), size))
+        #     self.images.append(pygame.transform.scale(pygame.image.load('game/res/character/knight/png/Attack_5.png'), size))
+        #     self.images.append(pygame.transform.scale(pygame.image.load('game/res/character/knight/png/Attack_6.png'), size))
+        #     self.images.append(pygame.transform.scale(pygame.image.load('game/res/character/knight/png/Attack_7.png'), size))
+        #     self.images.append(pygame.transform.scale(pygame.image.load('game/res/character/knight/png/Attack_8.png'), size))
+        #     self.images.append(pygame.transform.scale(pygame.image.load('game/res/character/knight/png/Attack_9.png'), size))
+        #     self.images.append(pygame.transform.scale(pygame.image.load('game/res/character/knight/png/Attack_10.png'), size))
 
         
         # Rect 크기와 Image 크기 맞추기. pygame.transform.scale
@@ -157,6 +157,7 @@ class AnimatedSprite(pygame.sprite.Sprite, BaseObject):
 
         # mt와 결합하여 animation_time을 계산할 시간 초기화
         self.current_time = 0
+        self.current_attack_time = 0
 
     def move(self):
         dx, dy = self.movement
@@ -169,9 +170,9 @@ class AnimatedSprite(pygame.sprite.Sprite, BaseObject):
         self.move()
         
         if self.group == 'left':
-            self.collide_enemy(game.right_group, game)
+            self.collide_enemy(mt, game.right_group, game)
         else:
-            self.collide_enemy(game.left_group, game)
+            self.collide_enemy(mt, game.left_group, game)
 
         if self.state == 0:
             self.img_index_start = 0
@@ -186,7 +187,6 @@ class AnimatedSprite(pygame.sprite.Sprite, BaseObject):
             self.img_index_start = 20
             self.img_index_end = 29
 
-
         # loop 시간 더하기
         self.current_time += mt
 
@@ -200,7 +200,14 @@ class AnimatedSprite(pygame.sprite.Sprite, BaseObject):
 
             self.image = self.images[self.img_index]
 
-    def collide_enemy(self, enemy_group, game):
+    def draw(self):
+        # 체력바 그리기
+        if self.hp < self.hp_max:
+            pygame.draw.rect(self.game.SCREEN, (131, 133, 131), [self.rect.x - 1, self.rect.y - 5 , 50, 10])
+            pygame.draw.rect(self.game.SCREEN, (189, 76, 49), [self.rect.x - 1, self.rect.y - 5, 50 * self.hp / self.hp_max, 10])
+
+
+    def collide_enemy(self, mt, enemy_group, game):
         
         collide = pygame.sprite.pygame.sprite.spritecollide(self, enemy_group, False)
 
@@ -209,19 +216,26 @@ class AnimatedSprite(pygame.sprite.Sprite, BaseObject):
             #print("%s detect collide" % self.group)
             
             if(self.state == 2):
-                for enemy in collide:
-                    enemy.hp -= self.power
-                    if enemy.hp <= 0:
-                        enemy_name = enemy.name
-                        game.sprite_group.remove(enemy)
-                        if enemy.group == 'left':
-                            game.left_group.remove(enemy)
-                        else:
-                            game.right_group.remove(enemy)
-                        
-                        del(enemy)
-                        print('%s is dead' % enemy_name)
-                        return
+
+                self.current_attack_time += mt
+
+                # attack loop time 경과가 animation_time을 넘어서면 새로운 이미지 출력 
+                if self.current_attack_time >= self.animation_time:
+                    self.current_attack_time = 0
+                    for enemy in collide:
+                        enemy.hp -= self.power
+                        if enemy.hp <= 0:
+                            enemy_name = enemy.name
+                            game.sprite_group.remove(enemy)
+                            if enemy.group == 'left':
+                                game.left_group.remove(enemy)
+                            else:
+                                game.right_group.remove(enemy)
+                            
+                            del(enemy)
+                            print('%s is dead' % enemy_name)
+                            return
+
             else:
                 self.state = 2
                 self.img_index = 10
