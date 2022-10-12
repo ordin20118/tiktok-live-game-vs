@@ -451,7 +451,7 @@ class CastleSprite(pygame.sprite.Sprite, BaseObject):
         # 그룹명 그리기 - 이름 길이만큼 길어져야한다.        
         if self.group == 'left':            
             # 텍스트 설정
-            text = self.game.main_font_15.render(self.name, True, self.game.COLOR_BLACK)
+            text = self.game.main_font_15.render(self.name, True, self.game.COLOR_BLACK)            
             text_rect = text.get_rect()
             text_size = text_rect.size
             #text_rect.centerx = background_rect.centerx            
