@@ -1,0 +1,2 @@
+{"name":"서울","rank":1,"win":100,"lose":10,"top10Donator":[{"rank":1,"uniqueId":"","nickname":"","profilePictureUrl":""},{"rank":2,"uniqueId":"","nickname":"","profilePictureUrl":""},{"rank":3,"uniqueId":"","nickname":"","profilePictureUrl":""}]}
+{"name":"부산","rank":1,"win":100,"lose":10,"top10Donator":[]}

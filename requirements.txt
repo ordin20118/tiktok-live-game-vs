@@ -1,3 +1,5 @@
 pygame
 websockets
 asyncio
+websocket
+websocket-client

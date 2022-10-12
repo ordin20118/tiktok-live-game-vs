@@ -1,0 +1,16 @@
+{"name":"서울","rank":0,"win":0,"lose":0,"draw": 0,"top10Donator":[]}
+{"name":"부산","rank":0,"win":0,"lose":0,"draw": 0,"top10Donator":[]}
+{"name":"대구","rank":0,"win":0,"lose":0,"draw": 0,"top10Donator":[]}
+{"name":"인천","rank":0,"win":0,"lose":0,"draw": 0,"top10Donator":[]}
+{"name":"광주","rank":0,"win":0,"lose":0,"draw": 0,"top10Donator":[]}
+{"name":"대전","rank":0,"win":0,"lose":0,"draw": 0,"top10Donator":[]}
+{"name":"울산","rank":0,"win":0,"lose":0,"draw": 0,"top10Donator":[]}
+{"name":"세종","rank":0,"win":0,"lose":0,"draw": 0,"top10Donator":[]}
+{"name":"경기","rank":0,"win":0,"lose":0,"draw": 0,"top10Donator":[]}
+{"name":"경남","rank":0,"win":0,"lose":0,"draw": 0,"top10Donator":[]}
+{"name":"경북","rank":0,"win":0,"lose":0,"draw": 0,"top10Donator":[]}
+{"name":"전남","rank":0,"win":0,"lose":0,"draw": 0,"top10Donator":[]}
+{"name":"전북","rank":0,"win":0,"lose":0,"draw": 0,"top10Donator":[]}
+{"name":"강원","rank":0,"win":0,"lose":0,"draw": 0,"top10Donator":[]}
+{"name":"충북","rank":0,"win":0,"lose":0,"draw": 0,"top10Donator":[]}
+{"name":"충남","rank":0,"win":0,"lose":0,"draw": 0,"top10Donator":[]}
