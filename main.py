@@ -8,6 +8,7 @@ import random
 import websockets
 from game.sprite import characters
 from game.sprite import tiles
+from game.sprite import ui
 from game.dataload import *
 from game.transitions import *
 
@@ -37,6 +38,7 @@ RIGHT_CASTLE_POSITION = (SCREEN_WIDTH - 85, LAND_TOP_HEIGHT)
 LEFT_SPAWN_POSITION = (50, LAND_TOP_HEIGHT + 100)
 RIGHT_SPAWN_POSITION = (400, LAND_TOP_HEIGHT + 100)
 
+MAX_SKILL_COUNT = 5
 
 # 커스텀 이벤트 생성
 EVENT_NEW_USER_LEFT = pygame.USEREVENT+1
@@ -88,6 +90,7 @@ class Game:
         self.COLOR_BLUE = (24, 154, 211)
         self.COLOR_BLACK = (0, 0, 0)
         self.COLOR_WHITE = (255, 255, 255)
+        self.COLOR_YELLOW = (255, 228, 0)
         self.COLOR_BLUE_LIGHT = (103, 153, 255)
         self.COLOR_GREEN_LIGHT = (183, 240, 177)
         self.COLOR_RED_LIGHT = (255, 167, 167)
@@ -102,7 +105,6 @@ class Game:
         ### 시간 관련 변수 ###
         self.auto_player_spawn_term = 500 # 160      자동 플레이어 생성 주기
         self.auto_player_spawn_time = 0   #          자동 플레이어 생성 딜레이 시간
-
         self.game_timer_term = 60 * 0.5     # 게임 플레이 제한 시간 - 240초 => 4분
 
         # sprite group 설정
@@ -112,21 +114,48 @@ class Game:
         self.tile_group = pygame.sprite.Group()
         self.ui_group = pygame.sprite.Group()
 
+        print("menu size: %s" % ((SCREEN_WIDTH / MAX_SKILL_COUNT) * 0.7))
+
         self.tile_size = (50, 50)
+        self.menu_size = ((SCREEN_WIDTH / MAX_SKILL_COUNT) * 0.7, (SCREEN_WIDTH / MAX_SKILL_COUNT) * 0.7)
+        #self.menu_size = (150, 150)
         self.soldier_size = (60, 60)
+        self.knight_size = (90, 90)
+        self.lightning_size = (70, 922)    # 505 * 1357
         self.castle_size = (100, 180)
 
 
         # 리소스 불러오기
         import_soldier_left(self.soldier_size)
         import_soldier_right(self.soldier_size)
-        
+
+        import_knight_right(self.knight_size)
+        import_knight_left(self.knight_size)
+
+        import_lightning_images(self.lightning_size)
+
         import_castle_left(self.castle_size)
         import_castle_right(self.castle_size)
 
         import_ground_images(self.tile_size)
+        
 
         # 효과음 로드
+        self.sound_map = import_sound()
+       
+
+        # skill 로드
+        self.skills = []
+        f = open("game/data/skills.txt", 'r', encoding='UTF-8')
+        while True:
+            line = f.readline()
+            if not line: break            
+            obj = json.loads(line)
+            self.skills.append(obj)
+        import_menu_images(self.menu_size, self.skills)
+        print("[[ Complete load skills data. ]]")
+        print(self.skills)        
+        f.close()
 
 
 
@@ -153,9 +182,7 @@ class Game:
             #print("[LOAD RANK]: %s => %d %d " % (obj.get('name'), obj.get('win'), obj.get('lose')))
         print("[[ Complete load rank data. ]]")
         #print(self.rank)
-        f.close()
-
-      
+        f.close()      
 
         self.state = GAME_STATE_READY
         print("[[ END INIT GAME ]]")
@@ -197,20 +224,25 @@ class Game:
                 # 랜덤 함수 사용 
                 left_name = ""
                 right_name = ""
-                if self.is_set_candidate == False:            
+                if self.is_set_candidate == False:    
+                    print("[Start Set Candidate] candidates len: %d" % len(self.candidates))        
                     tmp_arr = list(range(len(self.candidates)))
-                    idx = random.randint(0, len(tmp_arr) - 1)
-                    left_name = self.candidates[idx]
-                    tmp_arr.remove(idx)
-                    idx = random.randint(0, len(tmp_arr) - 1)
-                    right_name = self.candidates[idx]
-                    tmp_arr.remove(idx)                    
+                    left_idx = random.randint(0, len(tmp_arr) - 1)
+                    left_name = self.candidates[left_idx]
+                    del tmp_arr[left_idx]
+
+                    right_idx = random.randint(0, len(tmp_arr) - 1)
+                    right_name = self.candidates[right_idx]
+                    del tmp_arr[right_idx]
+
                     self.is_set_candidate = True
+                    print("[[ Set Candidates ]]")
 
 
                 if self.is_set_tiles == False:
                     self.set_tiles()
                     self.is_set_tiles = True
+                    print("[[ Set Tiles ]]")
                 
                 # 양측 성 데이터 생성
                 if self.is_set_castle == False:
@@ -227,12 +259,14 @@ class Game:
                     self.right_group.add(new_right_castle)
                     self.sprite_group.add(new_right_castle)
                     self.is_set_castle = True
+                    print("[[ Set Castle ]]")
 
                 
                 
                 # 모든 처리가 완료되면 game state START로 변경
                 if self.is_end_ready_animation and self.is_set_candidate and self.is_set_castle:
                     self.state = GAME_STATE_START
+                    print("[[ Complete Ready Process ]]")
 
             
             # ================================== START ==================================
@@ -243,6 +277,7 @@ class Game:
                 self.start_ticks = pygame.time.get_ticks()
                 self.state = GAME_STATE_PLAYING
                 print("[[ SET TIMER ]]")
+                print("[[ Complete Start Process ]]")
                
 
 
@@ -265,6 +300,14 @@ class Game:
                     #                                             hp=100, power=5, name='right_%d'%auto_player_num, images=soldier_images_right, game=self)
                     # self.right_group.add(new_right_player)
                     # self.sprite_group.add(new_right_player)
+
+                    sp_y = RIGHT_SPAWN_POSITION[1]
+                    new_y = sp_y - (self.knight_size[0] - self.soldier_size[0])
+                    sp_xy = (RIGHT_SPAWN_POSITION[0], new_y)
+                    new_right_player = characters.KnightSprite(size=self.knight_size, position=sp_xy, movement=(-1,0), group='right', 
+                                                                hp=300, power=7, name='right_%d'%auto_player_num, images=knight_images_right, game=self)
+                    self.right_group.add(new_right_player)
+                    self.sprite_group.add(new_right_player)
                     
                     self.auto_player_spawn_time = 0
                     auto_player_num += 1                
@@ -282,11 +325,11 @@ class Game:
                 # is_clear_game_data = False
                 
                 # 승패 결정
-                if self.is_update_rank == False:
+                if self.is_update_rank == False:                    
                     left_rank_info = self.rank[self.left_castle.name]
                     right_rank_info = self.rank[self.right_castle.name]
                     if self.left_castle.hp > self.right_castle.hp:
-                        print("%s WIN!!" % self.left_castle.name) 
+                        print("[[ %s WIN!! ]]" % self.left_castle.name) 
                         self.winner = self.left_castle.name
                         self.loser = self.right_castle.name
                         self.is_draw = False               
@@ -294,7 +337,7 @@ class Game:
                         right_rank_info['lose'] = right_rank_info['lose'] + 1                    
 
                     elif self.left_castle.hp < self.right_castle.hp:
-                        print("%s WIN!!" % self.right_castle.name)   
+                        print("[[ %s WIN!! ]]" % self.right_castle.name)   
                         self.winner = self.right_castle.name
                         self.loser = self.left_castle.name
                         self.is_draw = False                    
@@ -302,19 +345,20 @@ class Game:
                         right_rank_info['win'] = right_rank_info['win'] + 1
 
                     else:
-                        print("DRAW")
+                        print("[[ DRAW ]]")
                         self.is_draw = True   
                         left_rank_info['draw'] = left_rank_info['draw'] + 1                    
                         right_rank_info['draw'] = right_rank_info['draw'] + 1
 
-                    print(left_rank_info)
-                    print(right_rank_info)
                     self.rank[self.left_castle.name] = left_rank_info
                     self.rank[self.right_castle.name] = right_rank_info
 
                     # 랭킹 정보 갱신
                     #   - 랭킹 정보 파일 통으로 새로 쓰기
-                    # TODO
+                    f = open("game/data/city_rank.txt", 'w', encoding='UTF-8')
+                    for candidate in self.candidates:                        
+                        f.write(json.dumps(self.rank[candidate], ensure_ascii=False) + '\n')
+                    f.close()
 
                     self.is_update_rank = True
                     self.draw_result = True
@@ -339,11 +383,11 @@ class Game:
                     self.is_clear_game_data = True
 
                 if(self.is_end_over_animation and self.is_update_rank and self.is_clear_game_data):
-                    print("[[ Complete Game Over Process ]]")
                     self.is_end_over_animation = False
                     self.is_update_rank = False
                     self.is_clear_game_data = False
                     self.state = GAME_STATE_READY
+                    print("[[ Complete Game Over Process ]]")
 
                 
 
@@ -385,8 +429,9 @@ class Game:
             self.SCREEN.blit(text_join_title, (text_join_title_rect.x, desc_rect_y + 65))
             self.SCREEN.blit(text_join_desc, (text_join_desc_rect.x, desc_rect_y + 85))
 
-             # 랭킹 정보 출력
-             # TODO
+            # 랭킹 정보 출력
+            # TODO
+            
 
 
 
@@ -440,7 +485,9 @@ class Game:
                 #s.fill((0,0,0))             
                 game_over_screen_rect = game_over_screen.get_rect()
                 game_over_screen_rect.center = self.SCREEN.get_rect().center
-                
+
+                #self.sound_map['stage_clear'].play()
+
                 if self.is_draw:
                     text_draw = self.main_font_60.render("DRAW", True, self.COLOR_GREEN_LIGHT)    
                     text_draw_rect = text_draw.get_rect()
@@ -451,13 +498,10 @@ class Game:
                     text_win_rect = text_win.get_rect()
                     text_win_rect.centerx = game_over_screen_rect.centerx                
                     game_over_screen.blit(text_win, (game_over_screen_rect.size[0] * 0.33, game_over_screen_rect.size[1] * 0.1))
-                    
 
                     text_winner = self.main_font_60.render(self.winner, True, self.COLOR_WHITE)    
                     text_winner_rect = text_winner.get_rect()
                     game_over_screen.blit(text_winner, (game_over_screen_rect.size[0] * 0.35, game_over_screen_rect.size[1] * 0.3))
-
-
 
                     text_lose = self.main_font_60.render("LOSE", True, self.COLOR_RED_LIGHT)    
                     text_lose_rect = text_lose.get_rect()                
@@ -470,6 +514,7 @@ class Game:
                     game_over_screen.blit(text_loser, (game_over_screen_rect.size[0] * 0.35, game_over_screen_rect.size[1] * 0.8))
 
                 self.SCREEN.blit(game_over_screen, game_over_screen_rect.topleft)
+                pygame.transform.smoothscale(game_over_screen, (SCREEN_WIDTH, SCREEN_HEIGHT))
 
                 if animation_time == 10:
                     self.is_end_over_animation = True
@@ -478,15 +523,17 @@ class Game:
                     self.is_draw = False
                 
 
-   
+            # 객체별로 필요한 백그라운드 그려주기
+            for sprite in self.sprite_group:
+                sprite.draw_back()   
 
+            # 모든 sprite 화면에 그려주기
+            self.sprite_group.draw(self.SCREEN)      
 
+            
             # 객체별로 필요한 그림 그려주기
             for sprite in self.sprite_group:
-                sprite.draw()
-            
-            # 모든 sprite 화면에 그려주기
-            self.sprite_group.draw(self.SCREEN)            
+                sprite.draw()        
             
             #pygame.display.flip()
             pygame.display.update()
@@ -606,7 +653,21 @@ class Game:
                 self.sprite_group.add(new_stone_tile) 
                 stone_x += self.tile_size[0]
             stone_y += self.tile_size[0]
-        pass
+        
+        menu_x = ((SCREEN_WIDTH / MAX_SKILL_COUNT) * 0.15) # TODO + profile_img_size
+        menu_y = LAND_BOTTOM_HEIGHT + ((SCREEN_WIDTH / 4) * 0.15)
+        for idx, skill in enumerate(self.skills):
+            tmp_image_list = []
+            tmp_image_list.append(menu_images[idx])
+            new_skill_menu = ui.SkillMenuSprite(size=self.menu_size, position=(menu_x, menu_y), group='menu', 
+                                                name=skill['name'], coin=skill['coin'], images=tmp_image_list, game=self)
+            self.ui_group.add(new_skill_menu)
+            self.sprite_group.add(new_skill_menu)
+            menu_x += self.menu_size[0] + ((SCREEN_WIDTH / MAX_SKILL_COUNT) * 0.15 * 2)
+            
+            # TODO: 현재 menu_x가 SCREEN WIDTH를 넘어서는 경우
+            #menu_y += self.menu_size[0] + ((SCREEN_WIDTH / MAX_SKILL_COUNT) * 0.15)
+        
 
 
 if __name__ == '__main__':

@@ -1,76 +1,6 @@
 import pygame
 
-# 기본 오브젝트 클래스
-class BaseObject:
-    def __init__(self, spr, coord, kinds, game):
-        self.kinds = kinds
-        self.spr = spr
-        self.spr_index = 0
-        self.game = game
-        self.width = spr[0].get_width()
-        self.height = spr[0].get_height()
-        self.direction = True
-        self.vspeed = 0
-        self.gravity = 0.2
-        self.movement = [0, 0]
-        self.collision = {'top' : False, 'bottom' : False, 'right' : False, 'left' : False}
-        self.rect = pygame.rect.Rect(coord[0], coord[1], self.width, self.height)
-        self.frameSpeed = 0
-        self.frameTimer = 0
-        self.destroy = False
-
-    def physics(self):
-        self.movement[0] = 0
-        self.movement[1] = 0
-
-        if self.gravity != 0:
-            self.movement[1] += self.vspeed
-
-            self.vspeed += self.gravity
-            if self.vspeed > 3:
-                self.vspeed = 3
-
-    def physics_after(self):
-        self.rect, self.collision = move(self.rect, self.movement)
-
-        if self.collision['bottom']:
-            self.vspeed = 0
-
-        if self.rect.y > 400 or self.rect.y  > 400 or self.rect.y  > 400:
-            self.destroy = True
-    
-    def draw(self):
-        self.game.screen_scaled.blit(pygame.transform.flip(self.spr[self.spr_index], self.direction, False)
-                    , (self.rect.x - self.game.camera_scroll[0], self.rect.y - self.game.camera_scroll[1]))
-
-        if self.kinds == 'enemy' and self.hp < self.hpm:
-            pygame.draw.rect(self.game.screen_scaled, (131, 133, 131)
-            , [self.rect.x - 1 - self.game.camera_scroll[0], self.rect.y - 5 - self.game.camera_scroll[1], 10, 2])
-            pygame.draw.rect(self.game.screen_scaled, (189, 76, 49)
-            , [self.rect.x - 1 - self.game.camera_scroll[0], self.rect.y - 5 - self.game.camera_scroll[1], 10 * self.hp / self.hpm, 2])
-
-    def animation(self, mode):
-        if mode == 'loop':
-            self.frameTimer += 1
-
-            if self.frameTimer >= self.frameSpeed:
-                self.frameTimer = 0
-                if self.spr_index < len(self.spr) - 1:
-                    self.spr_index += 1
-                else:
-                    self.spr_index = 0
-    
-    def draw_back(self):
-        pass
-
-    def destroy_self(self):
-        if self.kinds == 'enemy':
-            enemys.remove(self)
-
-        objects.remove(self)
-        del(self)
-
-class SoldierSprite(pygame.sprite.Sprite, BaseObject):
+class SkillSprite(pygame.sprite.Sprite):
 
     # state
     # 0: idle
@@ -79,7 +9,7 @@ class SoldierSprite(pygame.sprite.Sprite, BaseObject):
     # 3: die
     def __init__(self, size, position, movement, group, hp, power, name, images, game):
 
-        super(SoldierSprite, self).__init__()
+        super(SkillSprite, self).__init__()
 
         self.game = game
         self.name = name
@@ -90,25 +20,13 @@ class SoldierSprite(pygame.sprite.Sprite, BaseObject):
         self.movement = movement
         self.group = group
 
-        # 이미지를 Rect안에 넣기 위해 Rect의 크기 지정
-        # 이미지의 크기와 같게 하거나, 크기를 다르게 한다면 pygame.transform.scale을 사용하여 rect 안에
-        # 이미지를 맞추도록 한다.
-        #size = (60, 60)
-
         self.images = images
-    
-        
-        # Rect 크기와 Image 크기 맞추기. pygame.transform.scale
-        #self.images = [pygame.transform.scale(image, size) for image in images]         
-
-        # rect 만들기
         self.rect = pygame.Rect(position, size)
 
-        # 캐릭터의 첫번째 이미지
         self.img_index = 0
         self.img_index_start = 0
         self.img_index_end = 9
-        self.image = self.images[self.img_index]  # 'image' is the current image of the animation.
+        self.image = self.images[self.img_index] 
 
         # 1초에 보여줄 1장의 이미지 시간을 계산, 소수점 3자리까지 반올림
         #self.animation_time = round(100 / len(self.images * 100), 2)

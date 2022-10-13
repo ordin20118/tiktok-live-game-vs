@@ -51,6 +51,65 @@ def import_soldier_left(size):
     solider_images_left.append(pygame.transform.scale(pygame.image.load('game/res/character/knight/png/Attack_9.png'), size))
     solider_images_left.append(pygame.transform.scale(pygame.image.load('game/res/character/knight/png/Attack_10.png'), size))
 
+knight_images_right = []
+def import_knight_right(size):
+    knight_images_right.append(pygame.transform.flip(pygame.transform.scale(pygame.image.load('game/res/character/knight_gold/knight_run_01.png'), size), True, False))
+    knight_images_right.append(pygame.transform.flip(pygame.transform.scale(pygame.image.load('game/res/character/knight_gold/knight_run_02.png'), size), True, False))
+    knight_images_right.append(pygame.transform.flip(pygame.transform.scale(pygame.image.load('game/res/character/knight_gold/knight_run_03.png'), size), True, False))
+    knight_images_right.append(pygame.transform.flip(pygame.transform.scale(pygame.image.load('game/res/character/knight_gold/knight_run_04.png'), size), True, False))
+    knight_images_right.append(pygame.transform.flip(pygame.transform.scale(pygame.image.load('game/res/character/knight_gold/knight_run_05.png'), size), True, False))
+    knight_images_right.append(pygame.transform.flip(pygame.transform.scale(pygame.image.load('game/res/character/knight_gold/knight_run_06.png'), size), True, False))
+    knight_images_right.append(pygame.transform.flip(pygame.transform.scale(pygame.image.load('game/res/character/knight_gold/knight_run_07.png'), size), True, False))
+    knight_images_right.append(pygame.transform.flip(pygame.transform.scale(pygame.image.load('game/res/character/knight_gold/knight_run_08.png'), size), True, False))
+    knight_images_right.append(pygame.transform.flip(pygame.transform.scale(pygame.image.load('game/res/character/knight_gold/knight_run_09.png'), size), True, False))
+    knight_images_right.append(pygame.transform.flip(pygame.transform.scale(pygame.image.load('game/res/character/knight_gold/knight_run_10.png'), size), True, False))
+    knight_images_right.append(pygame.transform.flip(pygame.transform.scale(pygame.image.load('game/res/character/knight_gold/knight_attack_01.png'), size), True, False))
+    knight_images_right.append(pygame.transform.flip(pygame.transform.scale(pygame.image.load('game/res/character/knight_gold/knight_attack_02.png'), size), True, False))
+    knight_images_right.append(pygame.transform.flip(pygame.transform.scale(pygame.image.load('game/res/character/knight_gold/knight_attack_03.png'), size), True, False))
+    knight_images_right.append(pygame.transform.flip(pygame.transform.scale(pygame.image.load('game/res/character/knight_gold/knight_attack_04.png'), size), True, False))
+    knight_images_right.append(pygame.transform.flip(pygame.transform.scale(pygame.image.load('game/res/character/knight_gold/knight_attack_05.png'), size), True, False))
+    knight_images_right.append(pygame.transform.flip(pygame.transform.scale(pygame.image.load('game/res/character/knight_gold/knight_attack_06.png'), size), True, False))
+    knight_images_right.append(pygame.transform.flip(pygame.transform.scale(pygame.image.load('game/res/character/knight_gold/knight_attack_07.png'), size), True, False))
+    knight_images_right.append(pygame.transform.flip(pygame.transform.scale(pygame.image.load('game/res/character/knight_gold/knight_attack_08.png'), size), True, False))
+    knight_images_right.append(pygame.transform.flip(pygame.transform.scale(pygame.image.load('game/res/character/knight_gold/knight_attack_09.png'), size), True, False))
+    knight_images_right.append(pygame.transform.flip(pygame.transform.scale(pygame.image.load('game/res/character/knight_gold/knight_attack_10.png'), size), True, False))
+
+
+knight_images_left = []
+def import_knight_left(size):
+    knight_images_left.append(pygame.transform.scale(pygame.image.load('game/res/character/knight_gold/knight_run_01.png'), size))
+    knight_images_left.append(pygame.transform.scale(pygame.image.load('game/res/character/knight_gold/knight_run_02.png'), size))
+    knight_images_left.append(pygame.transform.scale(pygame.image.load('game/res/character/knight_gold/knight_run_03.png'), size))
+    knight_images_left.append(pygame.transform.scale(pygame.image.load('game/res/character/knight_gold/knight_run_04.png'), size))
+    knight_images_left.append(pygame.transform.scale(pygame.image.load('game/res/character/knight_gold/knight_run_05.png'), size))
+    knight_images_left.append(pygame.transform.scale(pygame.image.load('game/res/character/knight_gold/knight_run_06.png'), size))
+    knight_images_left.append(pygame.transform.scale(pygame.image.load('game/res/character/knight_gold/knight_run_07.png'), size))
+    knight_images_left.append(pygame.transform.scale(pygame.image.load('game/res/character/knight_gold/knight_run_08.png'), size))
+    knight_images_left.append(pygame.transform.scale(pygame.image.load('game/res/character/knight_gold/knight_run_09.png'), size))
+    knight_images_left.append(pygame.transform.scale(pygame.image.load('game/res/character/knight_gold/knight_run_10.png'), size))
+    knight_images_left.append(pygame.transform.scale(pygame.image.load('game/res/character/knight_gold/knight_attack_01.png'), size))
+    knight_images_left.append(pygame.transform.scale(pygame.image.load('game/res/character/knight_gold/knight_attack_02.png'), size))
+    knight_images_left.append(pygame.transform.scale(pygame.image.load('game/res/character/knight_gold/knight_attack_03.png'), size))
+    knight_images_left.append(pygame.transform.scale(pygame.image.load('game/res/character/knight_gold/knight_attack_04.png'), size))
+    knight_images_left.append(pygame.transform.scale(pygame.image.load('game/res/character/knight_gold/knight_attack_05.png'), size))
+    knight_images_left.append(pygame.transform.scale(pygame.image.load('game/res/character/knight_gold/knight_attack_06.png'), size))
+    knight_images_left.append(pygame.transform.scale(pygame.image.load('game/res/character/knight_gold/knight_attack_07.png'), size))
+    knight_images_left.append(pygame.transform.scale(pygame.image.load('game/res/character/knight_gold/knight_attack_08.png'), size))
+    knight_images_left.append(pygame.transform.scale(pygame.image.load('game/res/character/knight_gold/knight_attack_09.png'), size))
+    knight_images_left.append(pygame.transform.scale(pygame.image.load('game/res/character/knight_gold/knight_attack_10.png'), size))
+
+
+
+lightning_images = []
+def import_lightning_images(size):
+    lightning_images.append(pygame.transform.scale(pygame.image.load('game/res/skill/lightning/lightning_1.png'), size))
+    lightning_images.append(pygame.transform.scale(pygame.image.load('game/res/skill/lightning/lightning_2.png'), size))
+    lightning_images.append(pygame.transform.scale(pygame.image.load('game/res/skill/lightning/lightning_3.png'), size))
+    lightning_images.append(pygame.transform.scale(pygame.image.load('game/res/skill/lightning/lightning_4.png'), size))
+    lightning_images.append(pygame.transform.scale(pygame.image.load('game/res/skill/lightning/lightning_5.png'), size))
+    lightning_images.append(pygame.transform.scale(pygame.image.load('game/res/skill/lightning/lightning_6.png'), size))
+    lightning_images.append(pygame.transform.scale(pygame.image.load('game/res/skill/lightning/lightning_7.png'), size))
+
 
 
 castle_images_right = []
@@ -77,3 +136,27 @@ def import_ground_images(size):
     ground_tile_images.append(pygame.transform.scale(pygame.image.load('game/res/tile/ground_3.png'), size))
     ground_tile_images.append(pygame.transform.scale(pygame.image.load('game/res/tile/ground_4.png'), size))
 
+menu_images = []
+def import_menu_images(size, skills):
+    for skill in skills:
+        print(skill['image'])
+        menu_images.append(pygame.transform.scale(pygame.image.load(skill['image']), size))
+
+
+def import_sound():
+    sound_map = {}
+    devil_sound = pygame.mixer.Sound("game/res/sound/devil_boss_laugh.mp3")
+    devil_sound.set_volume(0.4)
+    sound_map['devil'] = devil_sound
+    donation_sound = pygame.mixer.Sound("game/res/sound/donation.mp3")
+    donation_sound.set_volume(0.7)
+    sound_map['donation'] = donation_sound
+    sound_map['thunder'] = pygame.mixer.Sound("game/res/sound/thunder_3.mp3")
+    stage_clear_sound = pygame.mixer.Sound("game/res/sound/stage_clear.mp3")
+    stage_clear_sound.set_volume(0.7)
+    sound_map['stage_clear'] = stage_clear_sound
+    sword_attack_sound = pygame.mixer.Sound("game/res/sound/sword_attack.mp3")
+    sword_attack_sound.set_volume(0.1)
+    sound_map['sword_attack'] = sword_attack_sound
+    return sound_map
+    
