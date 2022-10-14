@@ -2,73 +2,39 @@ import pygame
 
 # 기본 오브젝트 클래스
 class BaseObject:
-    def __init__(self, spr, coord, kinds, game):
-        self.kinds = kinds
-        self.spr = spr
-        self.spr_index = 0
+    def __init__(self, size, position, movement, group, hp, power, name, images, game):
         self.game = game
-        self.width = spr[0].get_width()
-        self.height = spr[0].get_height()
-        self.direction = True
-        self.vspeed = 0
-        self.gravity = 0.2
-        self.movement = [0, 0]
-        self.collision = {'top' : False, 'bottom' : False, 'right' : False, 'left' : False}
-        self.rect = pygame.rect.Rect(coord[0], coord[1], self.width, self.height)
-        self.frameSpeed = 0
-        self.frameTimer = 0
-        self.destroy = False
-
-    def physics(self):
-        self.movement[0] = 0
-        self.movement[1] = 0
-
-        if self.gravity != 0:
-            self.movement[1] += self.vspeed
-
-            self.vspeed += self.gravity
-            if self.vspeed > 3:
-                self.vspeed = 3
-
-    def physics_after(self):
-        self.rect, self.collision = move(self.rect, self.movement)
-
-        if self.collision['bottom']:
-            self.vspeed = 0
-
-        if self.rect.y > 400 or self.rect.y  > 400 or self.rect.y  > 400:
-            self.destroy = True
+        self.name = name
+        self.state = 1
+        self.hp = hp
+        self.hp_max = hp
+        self.power = power
+        self.movement = movement
+        self.now_movement = movement
+        self.group = group
+        self.type = 1
     
+    def move(self):
+        dx, dy = self.now_movement
+        self.rect.x += dx
+        self.rect.y += dy
+
+    def update(self, mt, game):
+        pass
+
     def draw(self):
-        self.game.screen_scaled.blit(pygame.transform.flip(self.spr[self.spr_index], self.direction, False)
-                    , (self.rect.x - self.game.camera_scroll[0], self.rect.y - self.game.camera_scroll[1]))
-
-        if self.kinds == 'enemy' and self.hp < self.hpm:
-            pygame.draw.rect(self.game.screen_scaled, (131, 133, 131)
-            , [self.rect.x - 1 - self.game.camera_scroll[0], self.rect.y - 5 - self.game.camera_scroll[1], 10, 2])
-            pygame.draw.rect(self.game.screen_scaled, (189, 76, 49)
-            , [self.rect.x - 1 - self.game.camera_scroll[0], self.rect.y - 5 - self.game.camera_scroll[1], 10 * self.hp / self.hpm, 2])
-
-    def animation(self, mode):
-        if mode == 'loop':
-            self.frameTimer += 1
-
-            if self.frameTimer >= self.frameSpeed:
-                self.frameTimer = 0
-                if self.spr_index < len(self.spr) - 1:
-                    self.spr_index += 1
-                else:
-                    self.spr_index = 0
+        pass
     
     def draw_back(self):
         pass
 
-    def destroy_self(self):
-        if self.kinds == 'enemy':
-            enemys.remove(self)
+    def damaged(self, damage):
+        self.hp -= damage
+        if self.hp <= 0:
+            self.destroy_self()
 
-        objects.remove(self)
-        del(self)
+    def destroy_self(self):
+        self.kill()
 
 class SoldierSprite(pygame.sprite.Sprite, BaseObject):
 
@@ -77,6 +43,10 @@ class SoldierSprite(pygame.sprite.Sprite, BaseObject):
     # 1: move
     # 2: attack
     # 3: die
+    # type
+    # 1: character
+    # 2: structure(castle)
+    # 3: skill
     def __init__(self, size, position, movement, group, hp, power, name, images, game):
 
         super(SoldierSprite, self).__init__()
@@ -88,7 +58,9 @@ class SoldierSprite(pygame.sprite.Sprite, BaseObject):
         self.hp_max = hp
         self.power = power
         self.movement = movement
+        self.now_movement = movement
         self.group = group
+        self.type = 1
 
         # 이미지를 Rect안에 넣기 위해 Rect의 크기 지정
         # 이미지의 크기와 같게 하거나, 크기를 다르게 한다면 pygame.transform.scale을 사용하여 rect 안에
@@ -118,11 +90,6 @@ class SoldierSprite(pygame.sprite.Sprite, BaseObject):
         # mt와 결합하여 animation_time을 계산할 시간 초기화
         self.current_time = 0
         self.current_attack_time = 0
-
-    def move(self):
-        dx, dy = self.movement
-        self.rect.x += dx
-        self.rect.y += dy
 
     def update(self, mt, game):
         # update를 통해 캐릭터의 이미지가 계속 반복해서 나타나도록 한다.
@@ -168,7 +135,6 @@ class SoldierSprite(pygame.sprite.Sprite, BaseObject):
 
 
     def collide_enemy(self, mt, enemy_group, game):
-        
         collide = pygame.sprite.pygame.sprite.spritecollide(self, enemy_group, False)
 
         if collide:
@@ -185,34 +151,26 @@ class SoldierSprite(pygame.sprite.Sprite, BaseObject):
                 if self.current_attack_time >= self.animation_time * 10:
                     self.current_attack_time = 0
                     #self.game.sound_map['sword_attack'].set_volume(0.1)
-                    self.game.sound_map['sword_attack'].play()
+                    #self.game.sound_map['sword_attack'].play()
                     for enemy in collide:
-                        enemy.hp -= self.power
-                        if enemy.hp <= 0:
-                            enemy_name = enemy.name
-                            game.sprite_group.remove(enemy)
-                            if enemy.group == 'left':
-                                game.left_group.remove(enemy)
-                            else:
-                                game.right_group.remove(enemy)
-                            
-                            del(enemy)
-                            #print('%s is dead' % enemy_name)
-                            return
+                        if enemy.type == 1:
+                            enemy.damaged(self.power)
+                        elif enemy.type == 2:
+                            enemy.damaged(self.power)
 
             else:
                 self.state = 2
                 self.img_index = 10
-                self.movement = (0, 0)
+                self.now_movement = (0, 0)
             
             
         else:
             #print("%s is no collide" % self.group)
             self.state = 1
             if self.group == 'left':
-                self.movement = (1, 0)
+                self.now_movement = (1, 0)
             else:
-                self.movement = (-1, 0)
+                self.now_movement = (-1, 0)
 
 
 class KnightSprite(pygame.sprite.Sprite, BaseObject):
@@ -233,7 +191,9 @@ class KnightSprite(pygame.sprite.Sprite, BaseObject):
         self.hp_max = hp
         self.power = power
         self.movement = movement
+        self.now_movement = movement
         self.group = group
+        self.type = 1
 
         # 이미지를 Rect안에 넣기 위해 Rect의 크기 지정
         # 이미지의 크기와 같게 하거나, 크기를 다르게 한다면 pygame.transform.scale을 사용하여 rect 안에
@@ -263,11 +223,6 @@ class KnightSprite(pygame.sprite.Sprite, BaseObject):
         # mt와 결합하여 animation_time을 계산할 시간 초기화
         self.current_time = 0
         self.current_attack_time = 0
-
-    def move(self):
-        dx, dy = self.movement
-        self.rect.x += dx
-        self.rect.y += dy
 
     def update(self, mt, game):
         # update를 통해 캐릭터의 이미지가 계속 반복해서 나타나도록 한다.
@@ -330,32 +285,21 @@ class KnightSprite(pygame.sprite.Sprite, BaseObject):
                 if self.current_attack_time >= self.animation_time * 10:
                     self.current_attack_time = 0
                     for enemy in collide:
-                        enemy.hp -= self.power
-                        if enemy.hp <= 0:
-                            enemy_name = enemy.name
-                            game.sprite_group.remove(enemy)
-                            if enemy.group == 'left':
-                                game.left_group.remove(enemy)
-                            else:
-                                game.right_group.remove(enemy)
-                            
-                            del(enemy)
-                            #print('%s is dead' % enemy_name)
-                            return
+                        if enemy.type == 1:
+                            enemy.damaged(self.power)
+                        elif enemy.type == 2:
+                            enemy.damaged(self.power)
 
             else:
                 self.state = 2
                 self.img_index = 10
-                self.movement = (0, 0)
+                self.now_movement = (0, 0)
             
             
         else:
             #print("%s is no collide" % self.group)
             self.state = 1
-            if self.group == 'left':
-                self.movement = (1, 0)
-            else:
-                self.movement = (-1, 0)
+            self.now_movement = self.movement
         
 class CastleSprite(pygame.sprite.Sprite, BaseObject):
 
@@ -376,6 +320,7 @@ class CastleSprite(pygame.sprite.Sprite, BaseObject):
         self.power = power
         self.movement = movement
         self.group = group
+        self.type = 2
 
         # 이미지를 Rect안에 넣기 위해 Rect의 크기 지정
         # 이미지의 크기와 같게 하거나, 크기를 다르게 한다면 pygame.transform.scale을 사용하여 rect 안에

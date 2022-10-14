@@ -3,3 +3,5 @@ websockets
 asyncio
 websocket
 websocket-client
+pillow
+numpy

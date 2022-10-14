@@ -2,15 +2,21 @@ import pygame
 import pygame.mixer
 import asyncio
 import time
+import io
 import datetime
 import json
 import random
+import os
 import websockets
 from game.sprite import characters
+from game.sprite import skills
 from game.sprite import tiles
 from game.sprite import ui
 from game.dataload import *
 from game.transitions import *
+from urllib.request import urlopen
+from PIL import Image, ImageDraw
+import numpy as np
 
 
 # 0:초기화 / 1:다음 게임 준비 / 2: 게임 시작 / 3: 플레이 / 4: 게임 종료
@@ -41,13 +47,19 @@ RIGHT_SPAWN_POSITION = (400, LAND_TOP_HEIGHT + 100)
 MAX_SKILL_COUNT = 5
 
 # 커스텀 이벤트 생성
-EVENT_NEW_USER_LEFT = pygame.USEREVENT+1
-EVENT_NEW_USER_RIGHT = pygame.USEREVENT+1
-new_user_left_event = pygame.event.Event(EVENT_NEW_USER_LEFT, message="New left user.")
-new_user_right_event = pygame.event.Event(EVENT_NEW_USER_RIGHT, message="New right user.")
+EVENT_SOCKET_MSG = pygame.USEREVENT+1
+
+# socket msg code
+MSG_CODE_COMMENT = 1
+MSG_CODE_LIKE = 2
+MSG_CODE_DONATION = 3
+MSG_CODE_SHARE = 4
+MSG_CODE_SET_CANDIDATES = 5
 
 # 게임 플레이 설정
-
+SPRITE_TYPE_CHARACTER = 1
+SPRITE_TYPE_STRUCTURE = 2
+SPRITE_TYPE_SKILL = 3
 
 class Game:
     def __init__(self):
@@ -57,19 +69,15 @@ class Game:
         pygame.display.set_caption("TIKTOK GAME")        
 
         #print(pygame.font.get_fonts())  # 사용 가능한 시스템 폰트 목록 출력 - 한글 지원x
-
-        # 게임 변수 설정
-        # - 게임 시간, 게임 점수 등..
         
+        # 상태 변수 설정
         # ready
         self.is_end_ready_animation = False
         self.is_set_candidate = False 
         self.is_set_tiles = False
         self.is_set_castle = False  
-
         # start
         self.is_set_timer = False
-
         # over
         self.is_end_over_animation = False
         self.is_update_rank = False
@@ -83,6 +91,7 @@ class Game:
         self.winner = None
         self.loser = None
 
+        # 게임 환경 설정
         self.SCREEN = pygame.display.set_mode((SCREEN_WIDTH, SCREEN_HEIGHT)) #화면 크기 설정
         #self.SCREEN_SURFACE = pygame.Surface((SCREEN_WIDTH, SCREEN_HEIGHT))
         self.clock = pygame.time.Clock() 
@@ -101,16 +110,24 @@ class Game:
         self.main_font_11 = pygame.font.Font("game/res/font/NanumBarunGothic.ttf", 11) 
         #text = main_font.render("Test Text", True, COLOR_BLACK)     # 문자열, antialias, 글자색
 
+        # 웹소켓 보낼 메시지큐
+        self.message_queue = []
+        self.donation_queue = []
+
 
         ### 시간 관련 변수 ###
         self.auto_player_spawn_term = 500 # 160      자동 플레이어 생성 주기
         self.auto_player_spawn_time = 0   #          자동 플레이어 생성 딜레이 시간
-        self.game_timer_term = 60 * 0.5     # 게임 플레이 제한 시간 - 240초 => 4분
+        self.game_timer_term = 60 * 4    # 게임 플레이 제한 시간 - 240초 => 4분
+        self.test_count = 0
+
+        self.auto_skill_time = 0    # TODO: remove - for test
 
         # sprite group 설정
         self.sprite_group = pygame.sprite.Group()
         self.left_group = pygame.sprite.Group()
         self.right_group = pygame.sprite.Group()
+        self.skill_group = pygame.sprite.Group()
         self.tile_group = pygame.sprite.Group()
         self.ui_group = pygame.sprite.Group()
 
@@ -119,9 +136,11 @@ class Game:
         self.tile_size = (50, 50)
         self.menu_size = ((SCREEN_WIDTH / MAX_SKILL_COUNT) * 0.7, (SCREEN_WIDTH / MAX_SKILL_COUNT) * 0.7)
         #self.menu_size = (150, 150)
+        self.donation_size = (SCREEN_WIDTH / 7, SCREEN_WIDTH / 7)
         self.soldier_size = (60, 60)
         self.knight_size = (90, 90)
-        self.lightning_size = (70, 922)    # 505 * 1357
+        self.lightning_size = (100, 268)
+        self.devil_size = (400, 400)
         self.castle_size = (100, 180)
 
 
@@ -133,6 +152,7 @@ class Game:
         import_knight_left(self.knight_size)
 
         import_lightning_images(self.lightning_size)
+        import_devil_images(self.devil_size)
 
         import_castle_left(self.castle_size)
         import_castle_right(self.castle_size)
@@ -153,8 +173,7 @@ class Game:
             obj = json.loads(line)
             self.skills.append(obj)
         import_menu_images(self.menu_size, self.skills)
-        print("[[ Complete load skills data. ]]")
-        print(self.skills)        
+        print("[[ Complete load skills data. ]]")    
         f.close()
 
 
@@ -189,19 +208,6 @@ class Game:
 
    
 
-
-    async def game_event_loop(self, event_queue):
-        current_time = 0
-        while True:
-            #print('game_event_loop')
-            last_time, current_time = current_time, time.time()
-            await asyncio.sleep(1 / FPS - (current_time - last_time))  # tick
-            event = pygame.event.poll()
-            if event.type != pygame.NOEVENT:
-                await event_queue.put(event)
-
-
-
     async def animation(self):
        
         auto_player_num = 0
@@ -224,8 +230,7 @@ class Game:
                 # 랜덤 함수 사용 
                 left_name = ""
                 right_name = ""
-                if self.is_set_candidate == False:    
-                    print("[Start Set Candidate] candidates len: %d" % len(self.candidates))        
+                if self.is_set_candidate == False:       
                     tmp_arr = list(range(len(self.candidates)))
                     left_idx = random.randint(0, len(tmp_arr) - 1)
                     left_name = self.candidates[left_idx]
@@ -234,6 +239,14 @@ class Game:
                     right_idx = random.randint(0, len(tmp_arr) - 1)
                     right_name = self.candidates[right_idx]
                     del tmp_arr[right_idx]
+
+                    json_obj = {
+                        "code": MSG_CODE_SET_CANDIDATES,
+                        "left_name": left_name,
+                        "right_name": right_name
+                    }
+                    json_str = json.dumps(json_obj, ensure_ascii=False)
+                    self.message_queue.append(json_str)
 
                     self.is_set_candidate = True
                     print("[[ Set Candidates ]]")
@@ -289,35 +302,63 @@ class Game:
                 #   - 승패가 결정나면 game state를 OVER로 변경
 
                 # 유닛 자동 생성 
-                if self.auto_player_spawn_time == self.auto_player_spawn_term:
+                if self.auto_player_spawn_time == self.auto_player_spawn_term - 300:
                     #print("[SPAWN PLAYER AUTO]")
+                    
                     new_left_player = characters.SoldierSprite(size=self.soldier_size, position=LEFT_SPAWN_POSITION, movement=(1,0), group='left', 
                                                             hp=100, power=5, name='left_%d'%auto_player_num, images=solider_images_left, game=self)
                     self.left_group.add(new_left_player)
                     self.sprite_group.add(new_left_player)
                     
-                    # new_right_player = characters.SoldierSprite(size=self.soldier_size, position=RIGHT_SPAWN_POSITION, movement=(-1,0), group='right', 
-                    #                                             hp=100, power=5, name='right_%d'%auto_player_num, images=soldier_images_right, game=self)
-                    # self.right_group.add(new_right_player)
-                    # self.sprite_group.add(new_right_player)
-
-                    sp_y = RIGHT_SPAWN_POSITION[1]
-                    new_y = sp_y - (self.knight_size[0] - self.soldier_size[0])
-                    sp_xy = (RIGHT_SPAWN_POSITION[0], new_y)
-                    new_right_player = characters.KnightSprite(size=self.knight_size, position=sp_xy, movement=(-1,0), group='right', 
-                                                                hp=300, power=7, name='right_%d'%auto_player_num, images=knight_images_right, game=self)
+                    new_right_player = characters.SoldierSprite(size=self.soldier_size, position=RIGHT_SPAWN_POSITION, movement=(-1,0), group='right', 
+                                                                hp=100, power=5, name='right_%d'%auto_player_num, images=soldier_images_right, game=self)
                     self.right_group.add(new_right_player)
                     self.sprite_group.add(new_right_player)
+
+                    # TODO: for test
+                    # self.test_count += 1
+                    # speed = 0.1
+                    # if self.test_count % 2 == 0:
+                    #     speed = 1
+                    #     sp_y = RIGHT_SPAWN_POSITION[1]
+                    #     new_y = sp_y - (self.knight_size[0] - self.soldier_size[0])
+                    #     sp_xy = (RIGHT_SPAWN_POSITION[0], new_y)
+                    #     new_right_player = characters.KnightSprite(size=self.knight_size, position=sp_xy, movement=(-speed,0), group='right', 
+                    #                                                 hp=300, power=7, name='right_%d'%auto_player_num, images=knight_images_right, game=self)
+                    #     self.right_group.add(new_right_player)
+                    #     self.sprite_group.add(new_right_player)
+                    # else:
+                    #     sp_y = RIGHT_SPAWN_POSITION[1]
+                    #     new_y = sp_y - (self.knight_size[0] - self.soldier_size[0])
+                    #     sp_xy = (RIGHT_SPAWN_POSITION[0], new_y)
+                    #     new_right_player = characters.KnightSprite(size=self.knight_size, position=sp_xy, movement=(-speed,0), group='right', 
+                    #                                                 hp=300, power=7, name='right_%d'%auto_player_num, images=knight_images_right, game=self)
+                    #     self.right_group.add(new_right_player)
+                    #     self.sprite_group.add(new_right_player)
+
+                    
                     
                     self.auto_player_spawn_time = 0
                     auto_player_num += 1                
                 else:
                     self.auto_player_spawn_time += + 1
+
+                # TODO: for test
+                if self.auto_skill_time == self.auto_player_spawn_term - 400 + 400:
+                    #self.spell_lightning('right')
+                    #self.spell_devil('left')
+
+
+                    self.auto_skill_time = 0
+                else:
+                    self.auto_skill_time += 1
+
+
             # ==========================================================================
 
 
             # ================================== OVER ==================================
-            if self.state == GAME_STATE_OVER:     
+            if self.state == GAME_STATE_OVER:
                 #print("[[ GAME OVER ]]")
                 #print("%s:[%s] / %s:[%s]" % (self.left_castle.name, self.left_castle.hp, self.right_castle.name, self.right_castle.hp))     
                 # is_end_over_animation = False
@@ -329,7 +370,7 @@ class Game:
                     left_rank_info = self.rank[self.left_castle.name]
                     right_rank_info = self.rank[self.right_castle.name]
                     if self.left_castle.hp > self.right_castle.hp:
-                        print("[[ %s WIN!! ]]" % self.left_castle.name) 
+                        #print("[[ %s WIN!! ]]" % self.left_castle.name) 
                         self.winner = self.left_castle.name
                         self.loser = self.right_castle.name
                         self.is_draw = False               
@@ -337,7 +378,7 @@ class Game:
                         right_rank_info['lose'] = right_rank_info['lose'] + 1                    
 
                     elif self.left_castle.hp < self.right_castle.hp:
-                        print("[[ %s WIN!! ]]" % self.right_castle.name)   
+                        #print("[[ %s WIN!! ]]" % self.right_castle.name)   
                         self.winner = self.right_castle.name
                         self.loser = self.left_castle.name
                         self.is_draw = False                    
@@ -345,7 +386,7 @@ class Game:
                         right_rank_info['win'] = right_rank_info['win'] + 1
 
                     else:
-                        print("[[ DRAW ]]")
+                        #print("[[ DRAW ]]")
                         self.is_draw = True   
                         left_rank_info['draw'] = left_rank_info['draw'] + 1                    
                         right_rank_info['draw'] = right_rank_info['draw'] + 1
@@ -362,6 +403,7 @@ class Game:
 
                     self.is_update_rank = True
                     self.draw_result = True
+                    self.sound_map['stage_clear'].play()
 
                 
                 
@@ -404,9 +446,9 @@ class Game:
             desc_rect_x = SCREEN_WIDTH * 0.04
             desc_rect_y = desc_rect_x
             desc_rect_width = SCREEN_WIDTH * 0.43
-            desc_rect_fill = pygame.draw.rect(self.SCREEN, (255, 255, 228), [desc_rect_x+3, desc_rect_y+3, desc_rect_width-6, desc_rect_width-6], 
+            desc_rect_fill = pygame.draw.rect(self.SCREEN, (255, 255, 228), [desc_rect_x+3, desc_rect_y+3, desc_rect_width-6, desc_rect_width * 0.6 - 6], 
                                         border_radius=0, border_top_left_radius=5, border_top_right_radius=5, border_bottom_left_radius=5, border_bottom_right_radius=5)
-            desc_rect_border = pygame.draw.rect(self.SCREEN, (153, 56, 0), [desc_rect_x, desc_rect_y, desc_rect_width, desc_rect_width], 
+            desc_rect_border = pygame.draw.rect(self.SCREEN, (153, 56, 0), [desc_rect_x, desc_rect_y, desc_rect_width, desc_rect_width * 0.6], 
                                         width=3, border_radius=0, border_top_left_radius=10, border_top_right_radius=10, border_bottom_left_radius=10, border_bottom_right_radius=10)
 
             # 참가 설명 텍스트
@@ -423,7 +465,7 @@ class Game:
             text_join_title = self.main_font_11.render("[ 유닛 추가 ]", True, self.COLOR_BLACK)
             text_join_title_rect = text_join_title.get_rect()
             text_join_title_rect.centerx = desc_rect_fill.centerx
-            text_join_desc = self.main_font_11.render("하트 5개당 1유닛", True, self.COLOR_BLACK)
+            text_join_desc = self.main_font_11.render("하트 5개이상 1유닛", True, self.COLOR_BLACK)
             text_join_desc_rect = text_join_desc.get_rect()
             text_join_desc_rect.centerx = desc_rect_fill.centerx            
             self.SCREEN.blit(text_join_title, (text_join_title_rect.x, desc_rect_y + 65))
@@ -538,30 +580,111 @@ class Game:
             #pygame.display.flip()
             pygame.display.update()
 
-    
+
+
+    async def game_event_loop(self, event_queue):
+        current_time = 0
+        while True:
+            #print('game_event_loop')
+            last_time, current_time = current_time, time.time()
+            await asyncio.sleep(1 / FPS - (current_time - last_time))
+            event = pygame.event.poll()
+            if event.type != pygame.NOEVENT:
+                await event_queue.put(event)
+
     async def handle_events(self, event_queue):
         isLeft = True
         current_time = 0
         while True:
             last_time, current_time = current_time, time.time()
-            await asyncio.sleep(10 / FPS - (current_time - last_time))  # tick
+            await asyncio.sleep(10 / FPS - (current_time - last_time))
             event = await event_queue.get()
             #print("event", event)
             if event.type == pygame.QUIT:
                 break
-            elif event.type == EVENT_NEW_USER_LEFT:                
-                if isLeft == True:
-                    new_left_player = characters.SoldierSprite(size=self.soldier_size, position=LEFT_SPAWN_POSITION, movement=(1,0), group='left', 
-                                                            hp=100, power=1, name='left_soldier', images=solider_images_left, game=self)
-                    self.left_group.add(new_left_player)
-                    self.sprite_group.add(new_left_player)
-                    isLeft = False
-                else:
-                    new_right_player = characters.SoldierSprite(size=self.soldier_size, position=RIGHT_SPAWN_POSITION, movement=(-1,0), group='right', 
-                                                            hp=100, power=1, name='right_soldier', images=soldier_images_right, game=self)
-                    self.right_group.add(new_right_player)
-                    self.sprite_group.add(new_right_player)
-                    isLeft = True
+            elif event.type == EVENT_SOCKET_MSG:
+                #print("event", event)               
+                msg_obj = None
+                try:
+                    msg_obj = json.loads(event.message)
+                    #print("[[ Message Object ]]")                    
+                    #print(msg_obj)
+                except Exception as e:
+                    pass
+                    #print(e)
+                
+                # TODO
+                # 도네이션의 경우 무조건 넘겨준다.
+                # 다른 이벤트는 state가 playing이 아니라면 패스
+
+                if self.state == GAME_STATE_PLAYING and msg_obj != None:
+
+                    if msg_obj['code'] == MSG_CODE_COMMENT:
+                        # 채팅에 팀 이름 포함 여부 확인
+                        # 이미 팀에 포함 되어 있는지 확인
+                        # 1.이미 팀에 포함되어 있다면 and 해당 사용자의 유닛이 살아 있다면 => 채팅 출력
+                        # 2. 포함되어 있지 않다면 
+                        # => 팀에 포함 + 유닛 생성
+                        pass
+                    elif msg_obj['code'] == MSG_CODE_LIKE:
+                        #print("[%s] likes count: %d" %(msg_obj['nickname'], msg_obj['like_count']))
+                        #unit_count = int(msg_obj['like_count'] / 5)
+                        #self.donation_queue.append(msg_obj)
+
+                        if msg_obj['like_count'] >= 5:
+                            # if isLeft == True:
+                            #     new_left_player = characters.SoldierSprite(size=self.soldier_size, position=LEFT_SPAWN_POSITION, movement=(1,0), group='left', 
+                            #                                             hp=100, power=1, name='left_soldier', images=solider_images_left, game=self)
+                            #     self.left_group.add(new_left_player)
+                            #     self.sprite_group.add(new_left_player)
+                            #     isLeft = False
+                            # else:
+                            #     new_right_player = characters.SoldierSprite(size=self.soldier_size, position=RIGHT_SPAWN_POSITION, movement=(-1,0), group='right', 
+                            #                                             hp=100, power=1, name='right_soldier', images=soldier_images_right, game=self)
+                            #     self.right_group.add(new_right_player)
+                            #     self.sprite_group.add(new_right_player)
+                            
+                                isLeft = True
+                    elif msg_obj['code'] == MSG_CODE_DONATION:
+                        print("[%s] dontaion: %d" %(msg_obj['nickname'], msg_obj['coin']))
+                        
+                        # 사용자의 팀 확인
+                        # 맵에서 가져올때 null 확인
+                        unique_id = msg_obj['unique_id']
+
+                        # must - 도네이션 애니메이션만 출력
+                        self.donation_queue.append(msg_obj)
+
+                        # 플레이 상태라면
+                        if self.state == GAME_STATE_PLAYING:
+                            # 팀확인
+                            # 도네이션 액수 확인
+                            # 스킬 시전
+                            diamondCnt = msg_obj['coin']
+                            if diamondCnt >= 1 and diamondCnt < 5:
+                                self.spell_lightning('left')
+                            elif diamondCnt >= 5 and diamondCnt < 10:
+                                pass
+                            elif diamondCnt >= 10 and diamondCnt < 50:
+                                # 나이트 소환
+                                sp_y = RIGHT_SPAWN_POSITION[1]
+                                new_y = sp_y - (self.knight_size[0] - self.soldier_size[0])
+                                sp_xy = (RIGHT_SPAWN_POSITION[0], new_y)
+                                new_right_player = characters.KnightSprite(size=self.knight_size, position=sp_xy, movement=(-0.7,0), group='right', 
+                                                                            hp=300, power=7, name='night_%s'%unique_id, images=knight_images_right, game=self)
+                                self.right_group.add(new_right_player)
+                                self.sprite_group.add(new_right_player)
+                            elif diamondCnt >= 50 and diamondCnt < 100:
+                                pass
+                            elif diamondCnt >= 100:
+                                self.spell_devil('right')
+
+                        
+                        
+                        pass
+                    elif msg_obj['code'] == MSG_CODE_SHARE:
+                        pass                    
+                    
             else:
                 pass
                 #print("event", event)
@@ -571,42 +694,153 @@ class Game:
 
     async def connect_to_server(self, event_queue): 
         print("[[ Cnnect to server ]]")
-        async with websockets.connect("ws://192.168.219.106:30001") as websocket:
-            #await websocket.send("Hi server. I'm client" );          
-            current_time = 0
+        target_ip = 'localhost'
+        async with websockets.connect("ws://%s:30001" % target_ip) as websocket:
+            await websocket.send("Hi server. I'm client" );          
+            self.websocket = websocket
+            
+            current_time = 0            
             while True:
+                #print("check")
                 last_time, current_time = current_time, time.time()
-                await asyncio.sleep(1 / FPS - (current_time - last_time))  # tick
-                
+                await asyncio.sleep(1 / FPS - (current_time - last_time))                
                 now = datetime.datetime.now()
-                msg_rcv = await websocket.recv(); 
-                # if self.state != GAME_STATE_PLAYING:
-                #     continue
-                print('[%s] %s' % (now, msg_rcv))                
-                new_event = pygame.event.Event(EVENT_NEW_USER_LEFT, message=msg_rcv)    
-                await event_queue.put(new_event)  
-               
+                
+                # send message
+                if len(self.message_queue) > 0: 
+                    for message in self.message_queue:
+                        print("[[ send to server ]]: %s" % message)
+                        await self.websocket.send(message)
+                        del self.message_queue[0]
+                        break
+
+                msg_rcv = await websocket.recv();
+                #print('[%s] %s' % (now, msg_rcv))
+                new_event = pygame.event.Event(EVENT_SOCKET_MSG, message=msg_rcv)    
+                await event_queue.put(new_event) 
+                
+
 
     def run(self):
         loop = asyncio.get_event_loop()
         event_queue = asyncio.Queue()
 
+
         pygame_task = asyncio.ensure_future(self.game_event_loop(event_queue))
         animation_task = asyncio.ensure_future(self.animation())
         event_task = asyncio.ensure_future(self.handle_events(event_queue))
         socket_task = asyncio.ensure_future(self.connect_to_server(event_queue))
-
+        img_task = asyncio.ensure_future(self.print_donation())
+                
         try:
             loop.run_forever()
         except KeyboardInterrupt:
             pass
+        except Exception as e:
+            print(e)
         finally:
             pygame_task.cancel()
             animation_task.cancel()
             event_task.cancel()
             socket_task.cancel()
+            img_task.cancel()
 
         pygame.quit()
+
+    async def print_donation(self):        
+        current_time = 0       
+        while True:
+            last_time, current_time = current_time, time.time()
+            await asyncio.sleep(1 / FPS - (current_time - last_time))            
+            
+            if len(self.donation_queue) > 0:
+                try:                
+                    # # get image from url and set stream file
+                    # image_str = urlopen(donation_obj['profile_img']).read()
+                    # image_file = io.BytesIO(image_str) 
+                    # image = pygame.image.load(image_file)
+                    # image = pygame.image.load(image_file)                    
+
+                    print("[print_web_image]")
+                    donation_obj = self.donation_queue[0]
+                    #print(donation_obj)
+                    user_id = donation_obj['user_id']
+                    
+                    #print("[user_id]:%s" % user_id)
+
+                    cache_path = "game/res/cache/profile/%s.png" % user_id
+
+                    # 캐시 파일 존재 확인
+                    is_file = os.path.isfile(cache_path)
+                    
+                    image = None
+                    if is_file:
+                        image = pygame.transform.scale(pygame.image.load(cache_path), self.donation_size)
+                    else:
+                        image_str = urlopen(donation_obj['profile_img']).read()
+                        # use PIL
+                        pil_img = Image.open(io.BytesIO(image_str))
+                        
+                        height,width = pil_img.size
+                        lum_img = Image.new('L', [height,width] , 0)
+                        
+                        draw = ImageDraw.Draw(lum_img)
+                        draw.pieslice([(0,0), (height,width)], 0, 360, 
+                                    fill = 255, outline = "white")
+                        img_arr =np.array(pil_img)
+                        lum_img_arr =np.array(lum_img)                    
+                        final_img_arr = np.dstack((img_arr,lum_img_arr))                        
+
+                        final_pil_img = Image.fromarray(final_img_arr)
+
+                        # 캐시 파일 저장
+                        final_pil_img.save(cache_path, 'png')
+                        image = pygame.transform.scale(pygame.image.load(cache_path), self.donation_size)
+
+                    tmps = []
+                    tmps.append(image)                    
+                    new_skill_menu = ui.DonationSprite(size=self.donation_size, position=((SCREEN_WIDTH * 0.5) - (self.donation_size[0] * 0.5), SCREEN_HEIGHT * 0.22), group='donation', 
+                                                    name=donation_obj['nickname'], coin=donation_obj['coin'], images=tmps, sound=self.sound_map['donation'], game=self)
+                    self.ui_group.add(new_skill_menu)
+                    self.sprite_group.add(new_skill_menu)
+                    del self.donation_queue[0]
+                except Exception as e:
+                    print("[print_donation error]:%s" % e)
+                    del self.donation_queue[0]
+
+           
+
+    def spell_lightning(self, group_name):        
+        target_group = None
+        if group_name == 'left':
+            target_group = self.right_group
+        else:
+            target_group = self.left_group
+        
+        if len(target_group) > 1:
+            sp_x = 0
+            rand_idx = random.randint(1, len(target_group) - 1)
+            for idx, sprite in enumerate(target_group):               
+                if rand_idx == idx:
+                    sp_x = sprite.rect.x
+                
+            sp_y = RIGHT_SPAWN_POSITION[1]
+            new_y = sp_y - (self.lightning_size[1] - self.soldier_size[0])
+            sp_xy = (sp_x, new_y)
+            new_lightning = skills.LightningSprite(size=self.lightning_size, position=sp_xy, movement=(0,0), group=group_name, 
+                                                    hp=100, power=999, name='%s_thunder'%group_name, skill_type=1, images=lightning_images, animation_count=2, sound=self.sound_map['thunder'], game=self)
+            self.skill_group.add(new_lightning)
+            self.sprite_group.add(new_lightning)
+
+
+    def spell_devil(self, group_name):
+        tmp_rect = pygame.Rect(0, 0, self.devil_size[0], self.devil_size[1])
+        tmp_rect.centerx = SCREEN_WIDTH / 2
+        sp_xy = (tmp_rect.x, SCREEN_HEIGHT * 0.2)
+        new_lightning = skills.DevilSprite(size=self.devil_size, position=sp_xy, movement=(0,0), group=group_name, 
+                                                hp=100, power=1000, name='%s_devil'%group_name, skill_type=2, images=devil_images, animation_count=6, sound=self.sound_map['devil'], game=self)
+        self.skill_group.add(new_lightning)
+        self.sprite_group.add(new_lightning)
 
 
     def set_tiles(self):        

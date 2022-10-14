@@ -111,6 +111,14 @@ def import_lightning_images(size):
     lightning_images.append(pygame.transform.scale(pygame.image.load('game/res/skill/lightning/lightning_7.png'), size))
 
 
+devil_images = []
+def import_devil_images(size):
+    devil_images.append(pygame.transform.scale(pygame.image.load('game/res/skill/devil/devil_1.png'), size))
+    devil_images.append(pygame.transform.scale(pygame.image.load('game/res/skill/devil/devil_2.png'), size))
+    devil_images.append(pygame.transform.scale(pygame.image.load('game/res/skill/devil/devil_3.png'), size))
+    devil_images.append(pygame.transform.scale(pygame.image.load('game/res/skill/devil/devil_4.png'), size))
+
+
 
 castle_images_right = []
 def import_castle_right(size):  
@@ -146,12 +154,14 @@ def import_menu_images(size, skills):
 def import_sound():
     sound_map = {}
     devil_sound = pygame.mixer.Sound("game/res/sound/devil_boss_laugh.mp3")
-    devil_sound.set_volume(0.4)
+    devil_sound.set_volume(0.2)
     sound_map['devil'] = devil_sound
     donation_sound = pygame.mixer.Sound("game/res/sound/donation.mp3")
     donation_sound.set_volume(0.7)
     sound_map['donation'] = donation_sound
-    sound_map['thunder'] = pygame.mixer.Sound("game/res/sound/thunder_3.mp3")
+    thunder_sound = pygame.mixer.Sound("game/res/sound/thunder_3.mp3")
+    thunder_sound.set_volume(0.1)
+    sound_map['thunder'] = thunder_sound
     stage_clear_sound = pygame.mixer.Sound("game/res/sound/stage_clear.mp3")
     stage_clear_sound.set_volume(0.7)
     sound_map['stage_clear'] = stage_clear_sound
