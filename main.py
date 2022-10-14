@@ -118,7 +118,7 @@ class Game:
         ### 시간 관련 변수 ###
         self.auto_player_spawn_term = 500 # 160      자동 플레이어 생성 주기
         self.auto_player_spawn_time = 0   #          자동 플레이어 생성 딜레이 시간
-        self.game_timer_term = 60 * 4    # 게임 플레이 제한 시간 - 240초 => 4분
+        self.game_timer_term = 60 * 10    # 게임 플레이 제한 시간 - 240초 => 4분
         self.test_count = 0
 
         self.auto_skill_time = 0    # TODO: remove - for test
