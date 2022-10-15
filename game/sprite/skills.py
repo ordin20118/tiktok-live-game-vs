@@ -200,7 +200,7 @@ class LightningSprite(pygame.sprite.Sprite, SkillSprite):
           
             for enemy in collide:
                 if enemy.type == 1:
-                    enemy.kill()
+                    enemy.damaged(self.power)
                     self.use_collide = False
                     break
 
@@ -289,5 +289,5 @@ class DevilSprite(pygame.sprite.Sprite, SkillSprite):
         if self.use_collide:
             for enemy in enemy_group:
                 if enemy.type == 1:
-                    enemy.kill()    
+                    enemy.damaged(self.power) 
             self.use_collide = False

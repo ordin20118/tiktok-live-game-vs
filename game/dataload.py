@@ -25,9 +25,17 @@ def import_soldier_right(size):
     soldier_images_right.append(pygame.transform.flip(pygame.transform.scale(pygame.image.load('game/res/character/knight/png/Attack_8.png'), size), True, False))
     soldier_images_right.append(pygame.transform.flip(pygame.transform.scale(pygame.image.load('game/res/character/knight/png/Attack_9.png'), size), True, False))
     soldier_images_right.append(pygame.transform.flip(pygame.transform.scale(pygame.image.load('game/res/character/knight/png/Attack_10.png'), size), True, False))
+    soldier_images_right.append(pygame.transform.flip(pygame.transform.scale(pygame.image.load('game/res/character/knight/png/Dead_1.png'), (size[0] * 1.5, size[1] * 1.2)), True, False))
+    soldier_images_right.append(pygame.transform.flip(pygame.transform.scale(pygame.image.load('game/res/character/knight/png/Dead_2.png'), (size[0] * 1.5, size[1] * 1.2)), True, False))
+    soldier_images_right.append(pygame.transform.flip(pygame.transform.scale(pygame.image.load('game/res/character/knight/png/Dead_3.png'), (size[0] * 1.5, size[1] * 1.2)), True, False))
+    soldier_images_right.append(pygame.transform.flip(pygame.transform.scale(pygame.image.load('game/res/character/knight/png/Dead_4.png'), (size[0] * 1.5, size[1] * 1.2)), True, False))
+    soldier_images_right.append(pygame.transform.flip(pygame.transform.scale(pygame.image.load('game/res/character/knight/png/Dead_5.png'), (size[0] * 1.5, size[1] * 1.2)), True, False))
+    soldier_images_right.append(pygame.transform.flip(pygame.transform.scale(pygame.image.load('game/res/character/knight/png/Dead_6.png'), (size[0] * 1.5, size[1] * 1.2)), True, False))
+    soldier_images_right.append(pygame.transform.flip(pygame.transform.scale(pygame.image.load('game/res/character/knight/png/Dead_7.png'), (size[0] * 1.5, size[1] * 1.2)), True, False))
+    soldier_images_right.append(pygame.transform.flip(pygame.transform.scale(pygame.image.load('game/res/character/knight/png/Dead_8.png'), (size[0] * 1.5, size[1] * 1.2)), True, False))
+    soldier_images_right.append(pygame.transform.flip(pygame.transform.scale(pygame.image.load('game/res/character/knight/png/Dead_9.png'), (size[0] * 1.5, size[1] * 1.2)), True, False))
+    soldier_images_right.append(pygame.transform.flip(pygame.transform.scale(pygame.image.load('game/res/character/knight/png/Dead_10.png'), (size[0] * 1.5, size[1] * 1.2)), True, False))    
 
-
-            
 solider_images_left = []
 def import_soldier_left(size):
     solider_images_left.append(pygame.transform.scale(pygame.image.load('game/res/character/knight/png/Run_1.png'), size))
@@ -50,6 +58,16 @@ def import_soldier_left(size):
     solider_images_left.append(pygame.transform.scale(pygame.image.load('game/res/character/knight/png/Attack_8.png'), size))
     solider_images_left.append(pygame.transform.scale(pygame.image.load('game/res/character/knight/png/Attack_9.png'), size))
     solider_images_left.append(pygame.transform.scale(pygame.image.load('game/res/character/knight/png/Attack_10.png'), size))
+    solider_images_left.append(pygame.transform.scale(pygame.image.load('game/res/character/knight/png/Dead_1.png'), (size[0] * 1.5, size[1] * 1.2)))
+    solider_images_left.append(pygame.transform.scale(pygame.image.load('game/res/character/knight/png/Dead_2.png'), (size[0] * 1.5, size[1] * 1.2)))
+    solider_images_left.append(pygame.transform.scale(pygame.image.load('game/res/character/knight/png/Dead_3.png'), (size[0] * 1.5, size[1] * 1.2)))
+    solider_images_left.append(pygame.transform.scale(pygame.image.load('game/res/character/knight/png/Dead_4.png'), (size[0] * 1.5, size[1] * 1.2)))
+    solider_images_left.append(pygame.transform.scale(pygame.image.load('game/res/character/knight/png/Dead_5.png'), (size[0] * 1.5, size[1] * 1.2)))
+    solider_images_left.append(pygame.transform.scale(pygame.image.load('game/res/character/knight/png/Dead_6.png'), (size[0] * 1.5, size[1] * 1.2)))
+    solider_images_left.append(pygame.transform.scale(pygame.image.load('game/res/character/knight/png/Dead_7.png'), (size[0] * 1.5, size[1] * 1.2)))
+    solider_images_left.append(pygame.transform.scale(pygame.image.load('game/res/character/knight/png/Dead_8.png'), (size[0] * 1.5, size[1] * 1.2)))
+    solider_images_left.append(pygame.transform.scale(pygame.image.load('game/res/character/knight/png/Dead_9.png'), (size[0] * 1.5, size[1] * 1.2)))
+    solider_images_left.append(pygame.transform.scale(pygame.image.load('game/res/character/knight/png/Dead_10.png'), (size[0] * 1.5, size[1] * 1.2)))
 
 knight_images_right = []
 def import_knight_right(size):
@@ -73,7 +91,7 @@ def import_knight_right(size):
     knight_images_right.append(pygame.transform.flip(pygame.transform.scale(pygame.image.load('game/res/character/knight_gold/knight_attack_08.png'), size), True, False))
     knight_images_right.append(pygame.transform.flip(pygame.transform.scale(pygame.image.load('game/res/character/knight_gold/knight_attack_09.png'), size), True, False))
     knight_images_right.append(pygame.transform.flip(pygame.transform.scale(pygame.image.load('game/res/character/knight_gold/knight_attack_10.png'), size), True, False))
-
+    
 
 knight_images_left = []
 def import_knight_left(size):

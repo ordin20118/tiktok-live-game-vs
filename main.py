@@ -302,15 +302,15 @@ class Game:
                 #   - 승패가 결정나면 game state를 OVER로 변경
 
                 # 유닛 자동 생성 
-                if self.auto_player_spawn_time == self.auto_player_spawn_term - 300:
+                if self.auto_player_spawn_time == self.auto_player_spawn_term - 300 + 300:
                     #print("[SPAWN PLAYER AUTO]")
                     
-                    new_left_player = characters.SoldierSprite(size=self.soldier_size, position=LEFT_SPAWN_POSITION, movement=(1,0), group='left', 
+                    new_left_player = characters.SoldierSprite(size=self.soldier_size, position=LEFT_SPAWN_POSITION, movement=(1,0), state=1, group='left', 
                                                             hp=100, power=5, name='left_%d'%auto_player_num, images=solider_images_left, game=self)
                     self.left_group.add(new_left_player)
                     self.sprite_group.add(new_left_player)
                     
-                    new_right_player = characters.SoldierSprite(size=self.soldier_size, position=RIGHT_SPAWN_POSITION, movement=(-1,0), group='right', 
+                    new_right_player = characters.SoldierSprite(size=self.soldier_size, position=RIGHT_SPAWN_POSITION, movement=(-1,0), state=1, group='right', 
                                                                 hp=100, power=5, name='right_%d'%auto_player_num, images=soldier_images_right, game=self)
                     self.right_group.add(new_right_player)
                     self.sprite_group.add(new_right_player)
@@ -838,7 +838,7 @@ class Game:
         tmp_rect.centerx = SCREEN_WIDTH / 2
         sp_xy = (tmp_rect.x, SCREEN_HEIGHT * 0.2)
         new_lightning = skills.DevilSprite(size=self.devil_size, position=sp_xy, movement=(0,0), group=group_name, 
-                                                hp=100, power=1000, name='%s_devil'%group_name, skill_type=2, images=devil_images, animation_count=6, sound=self.sound_map['devil'], game=self)
+                                                hp=100, power=100000, name='%s_devil'%group_name, skill_type=2, images=devil_images, animation_count=6, sound=self.sound_map['devil'], game=self)
         self.skill_group.add(new_lightning)
         self.sprite_group.add(new_lightning)
 

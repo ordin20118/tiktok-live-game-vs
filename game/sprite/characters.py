@@ -47,13 +47,13 @@ class SoldierSprite(pygame.sprite.Sprite, BaseObject):
     # 1: character
     # 2: structure(castle)
     # 3: skill
-    def __init__(self, size, position, movement, group, hp, power, name, images, game):
+    def __init__(self, size, position, movement, state, group, hp, power, name, images, game):
 
         super(SoldierSprite, self).__init__()
 
         self.game = game
         self.name = name
-        self.state = 1
+        self.state = state
         self.hp = hp
         self.hp_max = hp
         self.power = power
@@ -77,9 +77,21 @@ class SoldierSprite(pygame.sprite.Sprite, BaseObject):
         self.rect = pygame.Rect(position, size)
 
         # 캐릭터의 첫번째 이미지
-        self.img_index = 0
-        self.img_index_start = 0
-        self.img_index_end = 9
+        
+        if self.state == 0:
+            self.img_index_start = 0
+            self.img_index_end = 9
+        elif self.state == 1:
+            self.img_index_start = 0
+            self.img_index_end = 9
+        elif self.state == 2:
+            self.img_index_start = 10
+            self.img_index_end = 19
+        elif self.state == 3:
+            self.img_index_start = 20
+            self.img_index_end = 29
+
+        self.img_index = self.img_index_start
         self.image = self.images[self.img_index]  # 'image' is the current image of the animation.
 
         # 1초에 보여줄 1장의 이미지 시간을 계산, 소수점 3자리까지 반올림
@@ -124,6 +136,9 @@ class SoldierSprite(pygame.sprite.Sprite, BaseObject):
             self.img_index += 1
             if self.img_index >= self.img_index_end:
                 self.img_index = self.img_index_start
+                if self.state == 3: # 죽은 상태 애니메이션의 경우 완료 후 self 제거
+                    self.kill()
+                    return
 
             self.image = self.images[self.img_index]
 
@@ -135,6 +150,10 @@ class SoldierSprite(pygame.sprite.Sprite, BaseObject):
 
 
     def collide_enemy(self, mt, enemy_group, game):
+        
+        if self.state == 3:
+            return
+
         collide = pygame.sprite.pygame.sprite.spritecollide(self, enemy_group, False)
 
         if collide:
@@ -171,6 +190,23 @@ class SoldierSprite(pygame.sprite.Sprite, BaseObject):
                 self.now_movement = (1, 0)
             else:
                 self.now_movement = (-1, 0)
+    
+    def destroy_self(self):
+        # 죽음 상태의 솔져 생성
+        if self.group == 'left':
+            interval_x = (self.rect.size[0] * 1.2) - self.rect.size[0]
+            sp_xy = (self.rect.x - interval_x, self.rect.y)
+            sp_size = (self.rect.size[0] * 1.2, self.rect.size[1])
+            dead_player = SoldierSprite(size=sp_size, position=sp_xy, movement=(0,0), state=3, group='left', 
+                                                    hp=100, power=0, name='dead_soldier', images=self.images, game=self.game)
+            self.game.sprite_group.add(dead_player)
+        else:
+            sp_xy = (self.rect.x, self.rect.y)
+            sp_size = (self.rect.size[0] * 1.2, self.rect.size[1])
+            dead_player = SoldierSprite(size=sp_size, position=sp_xy, movement=(0,0), state=3, group='right', 
+                                                    hp=100, power=0, name='dead_soldier', images=self.images, game=self.game)
+            self.game.sprite_group.add(dead_player)
+        self.kill()
 
 
 class KnightSprite(pygame.sprite.Sprite, BaseObject):
