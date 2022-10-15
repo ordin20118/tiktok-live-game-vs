@@ -110,10 +110,9 @@ class Game:
         self.main_font_11 = pygame.font.Font("game/res/font/NanumBarunGothic.ttf", 11) 
         #text = main_font.render("Test Text", True, COLOR_BLACK)     # 문자열, antialias, 글자색
 
-        # 웹소켓 보낼 메시지큐
-        self.message_queue = []
-        self.donation_queue = []
-
+        
+        self.message_queue = []     # 웹소켓 전송 메시지큐
+        self.donation_queue = []    # 도네이션 큐
 
         ### 시간 관련 변수 ###
         self.auto_player_spawn_term = 500 # 160      자동 플레이어 생성 주기
@@ -203,6 +202,13 @@ class Game:
         #print(self.rank)
         f.close()      
 
+
+        # 게임 플레이 변수
+        self.join_map = {}
+        self.left_name = ""
+        self.right_name = ""
+        
+
         self.state = GAME_STATE_READY
         print("[[ END INIT GAME ]]")
 
@@ -228,22 +234,22 @@ class Game:
 
                 # 대결 지역 선정 - 메모리에서 가져다가 사용한다.
                 # 랜덤 함수 사용 
-                left_name = ""
-                right_name = ""
+                self.left_name = ""
+                self.right_name = ""
                 if self.is_set_candidate == False:       
                     tmp_arr = list(range(len(self.candidates)))
                     left_idx = random.randint(0, len(tmp_arr) - 1)
-                    left_name = self.candidates[left_idx]
+                    self.left_name = self.candidates[left_idx]
                     del tmp_arr[left_idx]
 
                     right_idx = random.randint(0, len(tmp_arr) - 1)
-                    right_name = self.candidates[right_idx]
+                    self.right_name = self.candidates[right_idx]
                     del tmp_arr[right_idx]
 
                     json_obj = {
                         "code": MSG_CODE_SET_CANDIDATES,
-                        "left_name": left_name,
-                        "right_name": right_name
+                        "left_name": self.left_name,
+                        "right_name": self.right_name
                     }
                     json_str = json.dumps(json_obj, ensure_ascii=False)
                     self.message_queue.append(json_str)
@@ -260,14 +266,14 @@ class Game:
                 # 양측 성 데이터 생성
                 if self.is_set_castle == False:
                     new_left_castle = characters.CastleSprite(size=self.castle_size, position=LEFT_CASTLE_POSITION, movement=(0,0), group='left',
-                                                            hp=3000, power=0, name=left_name, images=castle_images_left, game=self)
+                                                            hp=3000, power=0, name=self.left_name, images=castle_images_left, game=self)
                     self.left_castle = new_left_castle
                     self.left_group.add(new_left_castle)
                     self.sprite_group.add(new_left_castle)
                     
 
                     new_right_castle = characters.CastleSprite(size=self.castle_size, position=RIGHT_CASTLE_POSITION, movement=(0,0), group='right',
-                                                            hp=3000, power=0, name=right_name, images=castle_images_right, game=self)
+                                                            hp=3000, power=0, name=self.right_name, images=castle_images_right, game=self)
                     self.right_castle = new_right_castle
                     self.right_group.add(new_right_castle)
                     self.sprite_group.add(new_right_castle)
@@ -617,34 +623,44 @@ class Game:
                 # 도네이션의 경우 무조건 넘겨준다.
                 # 다른 이벤트는 state가 playing이 아니라면 패스
 
-                if self.state == GAME_STATE_PLAYING and msg_obj != None:
-
-                    if msg_obj['code'] == MSG_CODE_COMMENT:
+                if msg_obj != None:
+                    if msg_obj['code'] == MSG_CODE_COMMENT and self.state == GAME_STATE_PLAYING:
                         # 채팅에 팀 이름 포함 여부 확인
                         # 이미 팀에 포함 되어 있는지 확인
-                        # 1.이미 팀에 포함되어 있다면 and 해당 사용자의 유닛이 살아 있다면 => 채팅 출력
-                        # 2. 포함되어 있지 않다면 
-                        # => 팀에 포함 + 유닛 생성
-                        pass
-                    elif msg_obj['code'] == MSG_CODE_LIKE:
+                        if msg_obj['unique_id'] in self.join_map:
+                            # 1.이미 팀에 포함되어 있다면 and 해당 사용자의 유닛이 살아 있다면 => 채팅 출력
+                            pass
+                        else:
+                            # 2. 포함되어 있지 않다면 
+                            # => 팀에 포함 + 유닛 생성
+                            if msg_obj['comment'].indexOf(self.left_name) > 0:
+                                msg_obj['group'] = self.left_name
+                            else:
+                                msg_obj['group'] = self.right_name
+                            
+                            self.join_map[msg_obj['unique_id']] = msg_obj
+                            self.spawn_soldier(msg_obj['group'])
+
+                    elif msg_obj['code'] == MSG_CODE_LIKE and self.state == GAME_STATE_PLAYING:
                         #print("[%s] likes count: %d" %(msg_obj['nickname'], msg_obj['like_count']))
                         #unit_count = int(msg_obj['like_count'] / 5)
                         #self.donation_queue.append(msg_obj)
 
-                        if msg_obj['like_count'] >= 5:
-                            # if isLeft == True:
-                            #     new_left_player = characters.SoldierSprite(size=self.soldier_size, position=LEFT_SPAWN_POSITION, movement=(1,0), group='left', 
-                            #                                             hp=100, power=1, name='left_soldier', images=solider_images_left, game=self)
-                            #     self.left_group.add(new_left_player)
-                            #     self.sprite_group.add(new_left_player)
-                            #     isLeft = False
-                            # else:
-                            #     new_right_player = characters.SoldierSprite(size=self.soldier_size, position=RIGHT_SPAWN_POSITION, movement=(-1,0), group='right', 
-                            #                                             hp=100, power=1, name='right_soldier', images=soldier_images_right, game=self)
-                            #     self.right_group.add(new_right_player)
-                            #     self.sprite_group.add(new_right_player)
-                            
-                                isLeft = True
+                        if msg_obj['like_count'] >= 5 and msg_obj['unique_id'] in self.join_map:
+                            user_info = self.join_map[msg_obj['unique_id']]
+                            if user_info['group'] == 'left':
+                                self.spawn_soldier('left')
+                                # new_left_player = characters.SoldierSprite(size=self.soldier_size, position=LEFT_SPAWN_POSITION, movement=(1,0), group='left', 
+                                #                                         hp=100, power=1, name='left_soldier', images=solider_images_left, game=self)
+                                # self.left_group.add(new_left_player)
+                                # self.sprite_group.add(new_left_player)
+                            else:
+                                self.spawn_soldier('right')
+                                # new_right_player = characters.SoldierSprite(size=self.soldier_size, position=RIGHT_SPAWN_POSITION, movement=(-1,0), group='right', 
+                                #                                         hp=100, power=1, name='right_soldier', images=soldier_images_right, game=self)
+                                # self.right_group.add(new_right_player)
+                                # self.sprite_group.add(new_right_player)
+
                     elif msg_obj['code'] == MSG_CODE_DONATION:
                         print("[%s] dontaion: %d" %(msg_obj['nickname'], msg_obj['coin']))
                         
@@ -662,26 +678,44 @@ class Game:
                             # 스킬 시전
                             diamondCnt = msg_obj['coin']
                             if diamondCnt >= 1 and diamondCnt < 5:
-                                self.spell_lightning('left')
+                                if msg_obj['unique_id'] in self.join_map:
+                                    if user_info['group'] == 'left':                
+                                        self.spell_lightning('left')
+                                    else:
+                                        self.spell_lightning('right')
                             elif diamondCnt >= 5 and diamondCnt < 10:
+                                # 솔져 소환 x5
+                                # 시간 간격 두고 소환
                                 pass
                             elif diamondCnt >= 10 and diamondCnt < 50:
                                 # 나이트 소환
-                                sp_y = RIGHT_SPAWN_POSITION[1]
-                                new_y = sp_y - (self.knight_size[0] - self.soldier_size[0])
-                                sp_xy = (RIGHT_SPAWN_POSITION[0], new_y)
-                                new_right_player = characters.KnightSprite(size=self.knight_size, position=sp_xy, movement=(-0.7,0), group='right', 
-                                                                            hp=300, power=7, name='night_%s'%unique_id, images=knight_images_right, game=self)
-                                self.right_group.add(new_right_player)
-                                self.sprite_group.add(new_right_player)
+                                if msg_obj['unique_id'] in self.join_map:
+                                    if user_info['group'] == 'left':                
+                                        self.spawn_knight('left')
+                                    else:
+                                        self.spawn_knight('right')
+                                # sp_y = RIGHT_SPAWN_POSITION[1]
+                                # new_y = sp_y - (self.knight_size[0] - self.soldier_size[0])
+                                # sp_xy = (RIGHT_SPAWN_POSITION[0], new_y)
+                                # new_right_player = characters.KnightSprite(size=self.knight_size, position=sp_xy, movement=(-0.7,0), group='right', 
+                                #                                             hp=300, power=7, name='night_%s'%unique_id, images=knight_images_right, game=self)
+                                # self.right_group.add(new_right_player)
+                                # self.sprite_group.add(new_right_player)
                             elif diamondCnt >= 50 and diamondCnt < 100:
-                                pass
+                                # 참여 팀 확인
+                                # 해당 팀의 castle 체력 증가
+                                # 효과음 재생
+                                if msg_obj['unique_id'] in self.join_map:
+                                    if user_info['group'] == 'left':                
+                                        self.left_castle.hp = self.left_castle.hp_max
+                                    else:
+                                        self.right_castle.hp = self.right_castle.hp_max
                             elif diamondCnt >= 100:
-                                self.spell_devil('right')
-
-                        
-                        
-                        pass
+                                if msg_obj['unique_id'] in self.join_map:
+                                    if user_info['group'] == 'left':                
+                                        self.spell_devil('left')
+                                    else:
+                                        self.spell_devil('right')
                     elif msg_obj['code'] == MSG_CODE_SHARE:
                         pass                    
                     
@@ -809,6 +843,43 @@ class Game:
                     del self.donation_queue[0]
 
            
+    def spawn_soldier(self, group):
+        speed = 1
+        if group == 'right':
+            speed = -1
+        new_soldier = characters.SoldierSprite(size=self.soldier_size, position=LEFT_SPAWN_POSITION, movement=(speed,0), group=group, 
+                                                hp=100, power=1, name='%s_soldier'%group, images=solider_images_left, game=self)
+        if group == 'left':
+            self.left_group.add(new_soldier)
+        else:
+            self.right_group.add(new_soldier)
+        self.sprite_group.add(new_soldier)
+
+    def spawn_knight(self, group):
+        if group == 'right':
+            speed = -0.7
+            sp_y = RIGHT_SPAWN_POSITION[1]
+            new_y = sp_y - (self.knight_size[0] - self.soldier_size[0])
+            sp_xy = (RIGHT_SPAWN_POSITION[0], new_y)
+
+            new_knight = characters.KnightSprite(size=self.knight_size, position=sp_xy, movement=(speed,0), group=group, 
+                                                        hp=300, power=10, name='%s_night'%group, images=knight_images_right, game=self)
+            self.right_group.add(new_knight)
+            self.sprite_group.add(new_knight)
+        else:
+            speed = 0.7
+            sp_y = LEFT_SPAWN_POSITION[1]
+            new_y = sp_y - (self.knight_size[0] - self.soldier_size[0])
+            sp_xy = (LEFT_SPAWN_POSITION[0], new_y)
+            new_knight = characters.KnightSprite(size=self.knight_size, position=sp_xy, movement=(speed,0), group=group, 
+                                                        hp=300, power=10, name='%s_night'%group, images=knight_images_left, game=self)
+        
+            self.left_group.add(new_knight)
+            self.sprite_group.add(new_knight)
+        
+            
+        
+
 
     def spell_lightning(self, group_name):        
         target_group = None
