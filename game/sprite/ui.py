@@ -93,8 +93,6 @@ class DonationSprite(pygame.sprite.Sprite):
     def draw_back(self):
         pass
         #pygame.draw.rect(self.game.SCREEN, (131, 133, 131), [self.rect.x, self.rect.y, self.rect.size[0], self.rect.size[1]], border_radius=5)
-        
-                
 
     def update(self, mt, game):
         # TODO: 일정 시간(1.3초) 후 사라짐
@@ -105,6 +103,7 @@ class DonationSprite(pygame.sprite.Sprite):
             self.img_index += 1
             if self.img_index >= self.img_index_end:                
                 self.img_index = self.img_index_start
+                self.game.donation_state = True
                 self.kill()    
                 return
         

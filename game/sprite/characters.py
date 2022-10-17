@@ -487,4 +487,15 @@ class CastleSprite(pygame.sprite.Sprite, BaseObject):
                 self.movement = (1, 0)
             else:
                 self.movement = (-1, 0)
+    
+    def damaged(self, damage):
+        if self.hp > 0:
+            self.hp -= damage
+            if self.hp <= 0:
+                self.destroy_self()
+
+    def destroy_self(self):
+        if self.game.destroyed_castle == None:
+            self.game.destroyed_castle = self.group
+        self.kill()
 

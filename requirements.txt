@@ -5,3 +5,4 @@ websocket
 websocket-client
 pillow
 numpy
+unicode
