@@ -48,7 +48,7 @@ LEFT_CASTLE_POSITION = (-18, LAND_TOP_HEIGHT)
 RIGHT_CASTLE_POSITION = (SCREEN_WIDTH - 85, LAND_TOP_HEIGHT)
 
 LEFT_SPAWN_POSITION = (SCREEN_WIDTH * 0.01, LAND_TOP_HEIGHT + 100)
-RIGHT_SPAWN_POSITION = (SCREEN_WIDTH - (SCREEN_WIDTH * 0.05), LAND_TOP_HEIGHT + 100)
+RIGHT_SPAWN_POSITION = (SCREEN_WIDTH - (SCREEN_WIDTH * 0.07), LAND_TOP_HEIGHT + 100)
 
 MAX_SKILL_COUNT = 5
 
@@ -114,6 +114,7 @@ class Game:
         self.main_font_30 = pygame.font.Font("game/res/font/NanumBarunGothic.ttf", 30)   
         self.main_font_20 = pygame.font.Font("game/res/font/NanumBarunGothic.ttf", 20) 
         self.main_font_15 = pygame.font.Font("game/res/font/NanumBarunGothic.ttf", 15) 
+        self.main_font_13 = pygame.font.Font("game/res/font/NanumBarunGothic.ttf", 13) 
         self.main_font_11 = pygame.font.Font("game/res/font/NanumBarunGothic.ttf", 11) 
         #text = main_font.render("Test Text", True, COLOR_BLACK)     # 문자열, antialias, 글자색
         
@@ -124,7 +125,7 @@ class Game:
         ### 시간 관련 변수 ###
         self.auto_player_spawn_term = 500 # 160      자동 플레이어 생성 주기
         self.auto_player_spawn_time = 0   #          자동 플레이어 생성 딜레이 시간
-        self.game_timer_term = 60 * 10    # 게임 플레이 제한 시간 - 240초 => 4분
+        self.game_timer_term = 60 * 0.1    # 게임 플레이 제한 시간 - 240초 => 4분
         self.test_count = 0
 
         self.auto_skill_time = 0    # TODO: remove - for test
@@ -426,7 +427,7 @@ class Game:
             self.SCREEN.fill(self.COLOR_BLUE) 
 
             # 설명 UI
-            desc_rect_x = SCREEN_WIDTH * 0.04
+            desc_rect_x = SCREEN_WIDTH * 0.08
             desc_rect_y = desc_rect_x
             desc_rect_width = SCREEN_WIDTH * 0.43
             desc_rect_fill = pygame.draw.rect(self.SCREEN, (255, 255, 228), [desc_rect_x+3, desc_rect_y+3, desc_rect_width-6, desc_rect_width * 0.6 - 6], 
@@ -448,11 +449,15 @@ class Game:
             text_join_title = self.main_font_11.render("[ 유닛 추가 ]", True, self.COLOR_BLACK)
             text_join_title_rect = text_join_title.get_rect()
             text_join_title_rect.centerx = desc_rect_fill.centerx
-            text_join_desc = self.main_font_11.render("하트 5개이상 1유닛", True, self.COLOR_BLACK)
+            text_join_desc = self.main_font_11.render("Tap x 5 => 1 Soldier", True, self.COLOR_BLACK)
             text_join_desc_rect = text_join_desc.get_rect()
-            text_join_desc_rect.centerx = desc_rect_fill.centerx            
+            text_join_desc_rect.centerx = desc_rect_fill.centerx        
+            text_skill_desc = self.main_font_11.render("Tap x 15 => 50% Lightning", True, self.COLOR_BLACK)
+            text_skill_desc_rect = text_skill_desc.get_rect()
+            text_skill_desc_rect.centerx = desc_rect_fill.centerx        
             self.SCREEN.blit(text_join_title, (text_join_title_rect.x, desc_rect_y + 65))
             self.SCREEN.blit(text_join_desc, (text_join_desc_rect.x, desc_rect_y + 85))
+            self.SCREEN.blit(text_skill_desc, (text_skill_desc_rect.x, desc_rect_y + 105))
 
             # 랭킹 정보 출력
             # TODO
@@ -642,20 +647,21 @@ class Game:
                         #unit_count = int(msg_obj['like_count'] / 5)
                         #self.donation_queue.append(msg_obj)
 
-                        if msg_obj['like_count'] >= 5 and msg_obj['user_id'] in self.join_map:
+                        if msg_obj['like_count'] >= 15 and msg_obj['user_id'] in self.join_map:
+                            rand_int = random.randint(0, 1)
+                            if rand_int == 1:
+                                user_info = self.join_map[msg_obj['user_id']]
+                                if user_info['group'] == 'left':
+                                    self.spell_lightning('left')
+                                else:
+                                    self.spell_lightning('right')
+
+                        elif msg_obj['like_count'] >= 5 and msg_obj['user_id'] in self.join_map:
                             user_info = self.join_map[msg_obj['user_id']]
                             if user_info['group'] == 'left':
                                 self.spawn_soldier('left', user_info)
-                                # new_left_player = characters.SoldierSprite(size=self.soldier_size, position=LEFT_SPAWN_POSITION, movement=(1,0), group='left', 
-                                #                                         hp=100, power=1, name='left_soldier', images=solider_images_left, game=self)
-                                # self.left_group.add(new_left_player)
-                                # self.sprite_group.add(new_left_player)
                             else:
                                 self.spawn_soldier('right', user_info)
-                                # new_right_player = characters.SoldierSprite(size=self.soldier_size, position=RIGHT_SPAWN_POSITION, movement=(-1,0), group='right', 
-                                #                                         hp=100, power=1, name='right_soldier', images=soldier_images_right, game=self)
-                                # self.right_group.add(new_right_player)
-                                # self.sprite_group.add(new_right_player)
 
                     elif msg_obj['code'] == MSG_CODE_DONATION:
                         print("[%s] dontaion: %d" %(msg_obj['nickname'], msg_obj['coin']))
@@ -688,15 +694,15 @@ class Game:
                                     
                                     user_info = self.join_map[msg_obj['user_id']]                                      
                                     for i in range(0,5):
-                                        self.spawn_soldier(user_info['group'], None)
+                                        self.spawn_soldier(user_info['group'], user_info)
                             elif diamondCnt >= 10 and diamondCnt < 30:
                                 # 나이트 소환
                                 if msg_obj['user_id'] in self.join_map:
                                     user_info = self.join_map[msg_obj['user_id']]
                                     if user_info['group'] == 'left':                
-                                        self.spawn_knight('left')
+                                        self.spawn_knight('left', user_info)
                                     else:
-                                        self.spawn_knight('right')
+                                        self.spawn_knight('right', user_info)
                             elif diamondCnt >= 30 and diamondCnt < 50:
                                 # 참여 팀 확인
                                 # 해당 팀의 castle 체력 증가
@@ -842,25 +848,29 @@ class Game:
         if is_file:
             image = pygame.transform.scale(pygame.image.load(cache_path), size)
         else:
-            image_str = urlopen(img_url).read()
-            # use PIL
-            pil_img = Image.open(io.BytesIO(image_str))
-            
-            height,width = pil_img.size
-            lum_img = Image.new('L', [height,width] , 0)
-            
-            draw = ImageDraw.Draw(lum_img)
-            draw.pieslice([(0,0), (height,width)], 0, 360, 
-                        fill = 255, outline = "white")
-            img_arr =np.array(pil_img)
-            lum_img_arr =np.array(lum_img)                    
-            final_img_arr = np.dstack((img_arr,lum_img_arr))                        
+            try:
+                image_str = urlopen(img_url).read()
+                # use PIL
+                pil_img = Image.open(io.BytesIO(image_str))
+                
+                height,width = pil_img.size
+                lum_img = Image.new('L', [height,width] , 0)
+                
+                draw = ImageDraw.Draw(lum_img)
+                draw.pieslice([(0,0), (height,width)], 0, 360, 
+                            fill = 255, outline = "white")
+                img_arr =np.array(pil_img)
+                lum_img_arr =np.array(lum_img)                    
+                final_img_arr = np.dstack((img_arr,lum_img_arr))                        
 
-            final_pil_img = Image.fromarray(final_img_arr)
+                final_pil_img = Image.fromarray(final_img_arr)
 
-            # 캐시 파일 저장
-            final_pil_img.save(cache_path, 'png')
-            image = pygame.transform.scale(pygame.image.load(cache_path), size)
+                # 캐시 파일 저장
+                final_pil_img.save(cache_path, 'png')
+                image = pygame.transform.scale(pygame.image.load(cache_path), size)
+            except:
+                image = pygame.transform.scale(pygame.image.load('game/res/cache/profile/default.png'), self.right_profile_size)
+
         return image
 
     async def print_donation(self):        
@@ -896,25 +906,28 @@ class Game:
                     if is_file:
                         image = pygame.transform.scale(pygame.image.load(cache_path), self.donation_size)
                     else:
-                        image_str = urlopen(donation_obj['profile_img']).read()
-                        # use PIL
-                        pil_img = Image.open(io.BytesIO(image_str))
-                        
-                        height,width = pil_img.size
-                        lum_img = Image.new('L', [height,width] , 0)
-                        
-                        draw = ImageDraw.Draw(lum_img)
-                        draw.pieslice([(0,0), (height,width)], 0, 360, 
-                                    fill = 255, outline = "white")
-                        img_arr =np.array(pil_img)
-                        lum_img_arr =np.array(lum_img)                    
-                        final_img_arr = np.dstack((img_arr,lum_img_arr))                        
+                        try:
+                            image_str = urlopen(donation_obj['profile_img']).read()
+                            # use PIL
+                            pil_img = Image.open(io.BytesIO(image_str))
+                            
+                            height,width = pil_img.size
+                            lum_img = Image.new('L', [height,width] , 0)
+                            
+                            draw = ImageDraw.Draw(lum_img)
+                            draw.pieslice([(0,0), (height,width)], 0, 360, 
+                                        fill = 255, outline = "white")
+                            img_arr =np.array(pil_img)
+                            lum_img_arr =np.array(lum_img)                    
+                            final_img_arr = np.dstack((img_arr,lum_img_arr))                        
 
-                        final_pil_img = Image.fromarray(final_img_arr)
+                            final_pil_img = Image.fromarray(final_img_arr)
 
-                        # 캐시 파일 저장
-                        final_pil_img.save(cache_path, 'png')
-                        image = pygame.transform.scale(pygame.image.load(cache_path), self.donation_size)
+                            # 캐시 파일 저장
+                            final_pil_img.save(cache_path, 'png')
+                            image = pygame.transform.scale(pygame.image.load(cache_path), self.donation_size)
+                        except:
+                            image = pygame.transform.scale(pygame.image.load('game/res/cache/profile/default.png'), self.right_profile_size)
 
                     tmps = []
                     tmps.append(image)                    
@@ -957,7 +970,18 @@ class Game:
             user_info['spawn_units'].add(new_soldier)
             self.join_map[user_info['user_id']] = user_info
         
-    def spawn_knight(self, group):
+    def spawn_knight(self, group, user_info):
+
+        ch_name = "%s_soldier"%group
+        profile_img = None
+
+        if user_info != None:
+            ch_name = user_info['nickname']
+            if 'profile' in user_info:
+                profile_img = user_info['profile']
+
+
+        new_knight = None
         if group == 'right':
             speed = -1
             sp_y = RIGHT_SPAWN_POSITION[1]
@@ -965,7 +989,7 @@ class Game:
             sp_xy = (RIGHT_SPAWN_POSITION[0], new_y)
 
             new_knight = characters.KnightSprite(size=self.knight_size, position=sp_xy, movement=(speed,0), group='right', 
-                                                        hp=300, power=10, name='%s_night'%group, images=knight_images_right, game=self)
+                                                        hp=300, power=10, name=ch_name, profile=profile_img, images=knight_images_right, game=self)
             self.right_group.add(new_knight)
             self.sprite_group.add(new_knight)
         else:
@@ -974,10 +998,15 @@ class Game:
             new_y = sp_y - (self.knight_size[0] - self.soldier_size[0])
             sp_xy = (LEFT_SPAWN_POSITION[0], new_y)
             new_knight = characters.KnightSprite(size=self.knight_size, position=sp_xy, movement=(speed,0), group='left', 
-                                                        hp=300, power=10, name='%s_night'%group, images=knight_images_left, game=self)
+                                                        hp=300, power=10, name=ch_name, profile=profile_img, images=knight_images_left, game=self)
         
             self.left_group.add(new_knight)
             self.sprite_group.add(new_knight)
+
+        if user_info != None and new_knight != None:
+            user_info = self.join_map[user_info['user_id']]
+            user_info['spawn_units'].add(new_knight)
+            self.join_map[user_info['user_id']] = user_info
         
             
     ####### SKILL LOGIC #######

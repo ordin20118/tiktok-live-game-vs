@@ -170,12 +170,12 @@ class SoldierSprite(pygame.sprite.Sprite, BaseObject):
         
         # 닉네임 출력        
         if self.name != 'left_soldier' and self.name != 'right_soldier' and self.name != 'dead_soldier':
-            nickname_text = self.game.main_font_15.render(self.name, True, self.game.COLOR_BLACK)
+            nickname_text = self.game.main_font_13.render(self.name, True, self.game.COLOR_BLACK)
             nickname_text_rect = nickname_text.get_rect()
             nickname_text_size = nickname_text_rect.size            
             nickname_text_rect.centerx = self.rect.centerx            
             self_size_y = self.rect.size[1]
-            self.game.SCREEN.blit(nickname_text, (nickname_text_rect.x, self.rect.y + self_size_y + 4))
+            self.game.SCREEN.blit(nickname_text, (nickname_text_rect.x, self.rect.y + self_size_y + 2))
 
         # 체력바 그리기
         if self.hp < self.hp_max:
@@ -228,7 +228,7 @@ class SoldierSprite(pygame.sprite.Sprite, BaseObject):
     def destroy_self(self):
         # 죽음 상태의 솔져 생성
         if self.group == 'left':
-            interval_x = (self.rect.size[0] * 1.2) - self.rect.size[0]
+            interval_x = (self.rect.size[0] * 1.5) - self.rect.size[0]
             sp_xy = (self.rect.x - interval_x, self.rect.y)
             sp_size = (self.rect.size[0] * 1.2, self.rect.size[1])
             dead_player = SoldierSprite(size=sp_size, position=sp_xy, movement=(0,0), state=3, group='left', 
@@ -250,12 +250,13 @@ class KnightSprite(pygame.sprite.Sprite, BaseObject):
     # 1: move
     # 2: attack
     # 3: die
-    def __init__(self, size, position, movement, group, hp, power, name, images, game):
+    def __init__(self, size, position, movement, group, hp, power, name, profile, images, game):
 
         super(KnightSprite, self).__init__()
 
         self.game = game
-        self.name = name
+        self.name = name          
+        self.profile = profile
         self.state = 1
         self.hp = hp
         self.hp_max = hp
@@ -264,6 +265,7 @@ class KnightSprite(pygame.sprite.Sprite, BaseObject):
         self.now_movement = movement
         self.group = group
         self.type = 1
+        self.chat = None    # 사용자 채팅     
 
         # 이미지를 Rect안에 넣기 위해 Rect의 크기 지정
         # 이미지의 크기와 같게 하거나, 크기를 다르게 한다면 pygame.transform.scale을 사용하여 rect 안에
@@ -289,6 +291,9 @@ class KnightSprite(pygame.sprite.Sprite, BaseObject):
         #self.animation_time = round(100 / len(self.images * 100), 2)
         img_len = self.img_index_end - self.img_index_start + 1
         self.animation_time = round(100 / (img_len * 150), 2)
+
+        self.chat_animation_time = 3
+        self.chat_animation_now = 0
 
         # mt와 결합하여 animation_time을 계산할 시간 초기화
         self.current_time = 0
@@ -331,6 +336,34 @@ class KnightSprite(pygame.sprite.Sprite, BaseObject):
             self.image = self.images[self.img_index]
 
     def draw(self, mt):
+        # 채팅 출력
+        if self.chat != None:
+
+            msg = self.chat
+            if len(msg) >= 25:
+                msg = msg[0:25] + '...'
+            chat = self.game.main_font_15.render(msg, True, self.game.COLOR_BLACK)
+            chat_rect = chat.get_rect()
+            chat_size = chat_rect.size
+            # 채팅창
+            chat_back_rect = pygame.draw.rect(self.game.SCREEN, self.game.COLOR_WHITE, [self.rect.x, self.rect.y - 30, chat_size[0] + 20, chat_size[1] + 10])
+            chat_rect.centerx = chat_back_rect.centerx
+            # 채팅 메시지
+            self.game.SCREEN.blit(chat, (self.rect.x + 10, chat_back_rect.y + 3))
+            self.chat_animation_now += mt
+            if self.chat_animation_now >= self.chat_animation_time:
+                self.chat = None
+                self.chat_animation_now = 0
+        
+        # 닉네임 출력        
+        if self.name != 'left_knight' and self.name != 'right_knight' and self.name != 'dead_knight':
+            nickname_text = self.game.main_font_13.render(self.name, True, self.game.COLOR_BLACK)
+            nickname_text_rect = nickname_text.get_rect()
+            nickname_text_size = nickname_text_rect.size            
+            nickname_text_rect.centerx = self.rect.centerx            
+            self_size_y = self.rect.size[1]
+            self.game.SCREEN.blit(nickname_text, (nickname_text_rect.x, self.rect.y + self_size_y + 2))
+
         # 체력바 그리기
         if self.hp < self.hp_max:
             pygame.draw.rect(self.game.SCREEN, (131, 133, 131), [self.rect.x - 1, self.rect.y - 5 , 50, 10])
