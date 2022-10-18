@@ -88,7 +88,7 @@ class SkillSprite:
 
             self.image = self.images[self.img_index]
 
-    def draw(self):
+    def draw(self, mt):
         pass
 
     def draw_back(self):
@@ -187,7 +187,7 @@ class LightningSprite(pygame.sprite.Sprite, SkillSprite):
 
             self.image = self.images[self.img_index]
 
-    def draw(self):
+    def draw(self, mt):
         pass
 
     def draw_back(self):

@@ -1,5 +1,5 @@
 {"name":"Lightning","image":"game/res/ui/skill_menu/menu_lightning.png","coin":1,"is_use":1,"skill_images":[]}
 {"name":"Clone X 5","image":"game/res/ui/skill_menu/menu_clone.png","coin":5,"is_use":1,"skill_images":[]}
 {"name":"Knight","image":"game/res/ui/skill_menu/menu_knight.png","coin":10,"is_use":1,"skill_images":[]}
-{"name":"Heal","image":"game/res/ui/skill_menu/menu_heal.png","coin":50,"is_use":1,"skill_images":[]}
-{"name":"Devil","image":"game/res/ui/skill_menu/menu_devil.png","coin":100,"is_use":1,"skill_images":[]}
+{"name":"Heal","image":"game/res/ui/skill_menu/menu_heal.png","coin":30,"is_use":1,"skill_images":[]}
+{"name":"Devil","image":"game/res/ui/skill_menu/menu_devil.png","coin":50,"is_use":1,"skill_images":[]}

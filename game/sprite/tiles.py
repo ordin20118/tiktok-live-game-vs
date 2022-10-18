@@ -41,5 +41,5 @@ class TileSprite(pygame.sprite.Sprite, characters.BaseObject):
     def update(self, mt, game):
         self.image = self.images[0]
 
-    def draw(self):
+    def draw(self, mt):
         pass

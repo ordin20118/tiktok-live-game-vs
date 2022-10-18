@@ -32,8 +32,8 @@ GAME_STATE_OVER = 4
 FPS = 60
 
 # 스크린 전체 크기 지정
-SCREEN_WIDTH = 475
-SCREEN_HEIGHT = 840
+SCREEN_WIDTH = 598
+SCREEN_HEIGHT = 1060
 # second setting
 # SCREEN_WIDTH = 475
 # SCREEN_HEIGHT = 844
@@ -47,8 +47,8 @@ LAND_BOTTOM_HEIGHT = LAND_TOP_HEIGHT + 179
 LEFT_CASTLE_POSITION = (-18, LAND_TOP_HEIGHT)
 RIGHT_CASTLE_POSITION = (SCREEN_WIDTH - 85, LAND_TOP_HEIGHT)
 
-LEFT_SPAWN_POSITION = (50, LAND_TOP_HEIGHT + 100)
-RIGHT_SPAWN_POSITION = (400, LAND_TOP_HEIGHT + 100)
+LEFT_SPAWN_POSITION = (SCREEN_WIDTH * 0.01, LAND_TOP_HEIGHT + 100)
+RIGHT_SPAWN_POSITION = (SCREEN_WIDTH - (SCREEN_WIDTH * 0.05), LAND_TOP_HEIGHT + 100)
 
 MAX_SKILL_COUNT = 5
 
@@ -109,6 +109,7 @@ class Game:
         self.COLOR_BLUE_LIGHT = (103, 153, 255)
         self.COLOR_GREEN_LIGHT = (183, 240, 177)
         self.COLOR_RED_LIGHT = (255, 167, 167)
+        self.COLOR_GREY_LIGHT = (213, 213, 213)
         self.main_font_60 = pygame.font.Font("game/res/font/NanumBarunGothic.ttf", 60)
         self.main_font_30 = pygame.font.Font("game/res/font/NanumBarunGothic.ttf", 30)   
         self.main_font_20 = pygame.font.Font("game/res/font/NanumBarunGothic.ttf", 20) 
@@ -117,6 +118,7 @@ class Game:
         #text = main_font.render("Test Text", True, COLOR_BLACK)     # 문자열, antialias, 글자색
         
         self.message_queue = []     # 웹소켓 전송 메시지큐
+        self.join_queue = []        # 게임 참여 큐
         self.donation_queue = []    # 도네이션 큐
         
         ### 시간 관련 변수 ###
@@ -139,6 +141,7 @@ class Game:
         self.menu_size = ((SCREEN_WIDTH / MAX_SKILL_COUNT) * 0.7, (SCREEN_WIDTH / MAX_SKILL_COUNT) * 0.7)
         #self.menu_size = (150, 150)
         self.donation_size = (SCREEN_WIDTH / 7, SCREEN_WIDTH / 7)
+        self.profile_size = (SCREEN_WIDTH / 10, SCREEN_WIDTH / 10)
         self.soldier_size = (60, 60)
         self.knight_size = (90, 90)
         self.lightning_size = (100, 268)
@@ -320,32 +323,12 @@ class Game:
                 # 유닛 자동 생성 
                 if self.auto_player_spawn_time == self.auto_player_spawn_term - 300 + 300:
                     #print("[SPAWN PLAYER AUTO]")
-                    
-                    new_left_player = characters.SoldierSprite(size=self.soldier_size, position=LEFT_SPAWN_POSITION, movement=(1,0), state=1, group='left', 
-                                                            hp=100, power=5, name='left_%d'%auto_player_num, images=soldier_images_left, game=self)
-                    self.left_group.add(new_left_player)
-                    self.sprite_group.add(new_left_player)
-                    
-                    new_right_player = characters.SoldierSprite(size=self.soldier_size, position=RIGHT_SPAWN_POSITION, movement=(-1,0), state=1, group='right', 
-                                                                hp=100, power=5, name='right_%d'%auto_player_num, images=soldier_images_right, game=self)
-                    self.right_group.add(new_right_player)
-                    self.sprite_group.add(new_right_player)
-                    
+                    self.spawn_soldier('left', None)
+                    self.spawn_soldier('right', None)
                     self.auto_player_spawn_time = 0
                     auto_player_num += 1                
                 else:
                     self.auto_player_spawn_time += + 1
-
-                # TODO: for test
-                if self.auto_skill_time == self.auto_player_spawn_term - 400 + 400:
-                    #self.spell_lightning('right')
-                    #self.spell_devil('left')
-
-
-                    self.auto_skill_time = 0
-                else:
-                    self.auto_skill_time += 1
-
 
             # ==========================================================================
 
@@ -575,7 +558,7 @@ class Game:
             
             # 객체별로 필요한 그림 그려주기
             for sprite in self.sprite_group:
-                sprite.draw()        
+                sprite.draw(mt)        
             
             #pygame.display.flip()
             pygame.display.update()
@@ -623,51 +606,52 @@ class Game:
                         # 이미 팀에 포함 되어 있는지 확인
                         if msg_obj['user_id'] in self.join_map:
                             # 1.이미 팀에 포함되어 있다면 and 해당 사용자의 유닛이 살아 있다면 => 채팅 출력
+                            # TODO: 해당 sprite에 채팅 메시지를 설정하고 채팅 출력 상태를 True로 변경해준다.
                             #print("[%s]: %s" % (msg_obj['nickname'], msg_obj['comment']))
-                            pass
+                            user_info = self.join_map[msg_obj['user_id']]
+                            #print("%s spawn %d units." % (user_info['nickname'], len(user_info['spawn_units'])))
+                            if len(user_info['spawn_units']) > 0:
+                                #user_info['spawn_units'][0].chat = msg_obj['comment']
+                                for idx, unit in enumerate(user_info['spawn_units']):                                        
+                                    if idx == 0:                    
+                                        unit.chat = msg_obj['comment']
+                                        break
+                                
+                            
                         else:
                             # 2. 포함되어 있지 않다면 
                             # => 팀에 포함 + 유닛 생성
-
-                            #nickname = unicode(msg_obj['nickname'], 'utf-8')
                             print("[%s]: %s" % (msg_obj['nickname'], msg_obj['comment']))
                             
-                            #print("LEFT:%s"%self.left_name)
-                            #print("RIGHT:%s"%self.right_name)
-                            
-
                             if msg_obj['comment'].find(self.left_name) != -1:
                                 msg_obj['group'] = 'left'
-                                self.join_map[msg_obj['user_id']] = msg_obj
-                                #self.spawn_soldier(msg_obj['group'])
-                                print("[Joined Check] %s" % self.join_map[msg_obj['user_id']])
-                                self.spawn_soldier('left')
+                                msg_obj['spawn_units'] = pygame.sprite.Group()
+                                self.join_map[msg_obj['user_id']] = msg_obj      
+                                self.join_queue.append(self.join_map[msg_obj['user_id']])                                                     
+                                #self.spawn_soldier('left')
                             elif msg_obj['comment'].find(self.right_name) != -1:
                                 msg_obj['group'] = 'right'
+                                msg_obj['spawn_units'] = pygame.sprite.Group()
                                 self.join_map[msg_obj['user_id']] = msg_obj
-                                print("[Joined Check] %s" % self.join_map[msg_obj['user_id']])
-                                self.spawn_soldier('right')
-                                #self.spawn_soldier(msg_obj['group'])
+                                self.join_queue.append(self.join_map[msg_obj['user_id']])
+                                #self.spawn_soldier('right')                               
 
-                            
-                            # # TODO: remove
-                            # msg_obj['group'] = 'left'
                            
                     elif msg_obj['code'] == MSG_CODE_LIKE and self.state == GAME_STATE_PLAYING:
-                        #print("[%s] likes count: %d" %(msg_obj['nickname'], msg_obj['like_count']))
+                        print("[%s] likes count: %d" %(msg_obj['nickname'], msg_obj['like_count']))
                         #unit_count = int(msg_obj['like_count'] / 5)
                         #self.donation_queue.append(msg_obj)
 
                         if msg_obj['like_count'] >= 5 and msg_obj['user_id'] in self.join_map:
                             user_info = self.join_map[msg_obj['user_id']]
                             if user_info['group'] == 'left':
-                                self.spawn_soldier('left')
+                                self.spawn_soldier('left', user_info)
                                 # new_left_player = characters.SoldierSprite(size=self.soldier_size, position=LEFT_SPAWN_POSITION, movement=(1,0), group='left', 
                                 #                                         hp=100, power=1, name='left_soldier', images=solider_images_left, game=self)
                                 # self.left_group.add(new_left_player)
                                 # self.sprite_group.add(new_left_player)
                             else:
-                                self.spawn_soldier('right')
+                                self.spawn_soldier('right', user_info)
                                 # new_right_player = characters.SoldierSprite(size=self.soldier_size, position=RIGHT_SPAWN_POSITION, movement=(-1,0), group='right', 
                                 #                                         hp=100, power=1, name='right_soldier', images=soldier_images_right, game=self)
                                 # self.right_group.add(new_right_player)
@@ -698,9 +682,14 @@ class Game:
                                         self.spell_lightning('right')                                
                             elif diamondCnt >= 5 and diamondCnt < 10:
                                 # 솔져 소환 x5
-                                # 시간 간격 두고 소환
-                                pass
-                            elif diamondCnt >= 10 and diamondCnt < 50:
+                                # 시간 간격 두고 소환                                
+                                if msg_obj['user_id'] in self.join_map:                                    
+                                    print("[SPAWN 5 Soldiers]")                                    
+                                    
+                                    user_info = self.join_map[msg_obj['user_id']]                                      
+                                    for i in range(0,5):
+                                        self.spawn_soldier(user_info['group'], None)
+                            elif diamondCnt >= 10 and diamondCnt < 30:
                                 # 나이트 소환
                                 if msg_obj['user_id'] in self.join_map:
                                     user_info = self.join_map[msg_obj['user_id']]
@@ -708,14 +697,7 @@ class Game:
                                         self.spawn_knight('left')
                                     else:
                                         self.spawn_knight('right')
-                                # sp_y = RIGHT_SPAWN_POSITION[1]
-                                # new_y = sp_y - (self.knight_size[0] - self.soldier_size[0])
-                                # sp_xy = (RIGHT_SPAWN_POSITION[0], new_y)
-                                # new_right_player = characters.KnightSprite(size=self.knight_size, position=sp_xy, movement=(-0.7,0), group='right', 
-                                #                                             hp=300, power=7, name='night_%s'%user_id, images=knight_images_right, game=self)
-                                # self.right_group.add(new_right_player)
-                                # self.sprite_group.add(new_right_player)
-                            elif diamondCnt >= 50 and diamondCnt < 100:
+                            elif diamondCnt >= 30 and diamondCnt < 50:
                                 # 참여 팀 확인
                                 # 해당 팀의 castle 체력 증가
                                 # TODO: 효과음 재생
@@ -725,7 +707,7 @@ class Game:
                                         self.left_castle.hp = self.left_castle.hp_max
                                     else:
                                         self.right_castle.hp = self.right_castle.hp_max
-                            elif diamondCnt >= 100:                                
+                            elif diamondCnt >= 50:
                                 if msg_obj['user_id'] in self.join_map:
                                     user_info = self.join_map[msg_obj['user_id']]
                                     if user_info['group'] == 'left':                
@@ -783,8 +765,9 @@ class Game:
         end_check_task = asyncio.ensure_future(self.check_castle_hp())
         socket_task = asyncio.ensure_future(self.connect_to_server(event_queue))
         img_task = asyncio.ensure_future(self.print_donation())
+        join_task = asyncio.ensure_future(self.join_process())
         
-                
+        
         try:
             loop.run_forever()
         except KeyboardInterrupt:
@@ -798,6 +781,7 @@ class Game:
             socket_task.cancel()
             img_task.cancel()
             end_check_task.cancel()
+            join_task.cancel()
 
         pygame.quit()
 
@@ -811,6 +795,73 @@ class Game:
                 self.state = GAME_STATE_OVER
                 self.over_animation_time = pygame.time.get_ticks()
 
+    # 게임 참여 사용자들을 처리하는 로직
+    async def join_process(self):
+        print("[join_process]")
+        # queue에서 join된 사용자 확인
+        current_time = 0       
+        while True:
+            last_time, current_time = current_time, time.time()
+            await asyncio.sleep(1 / FPS - (current_time - last_time))          
+            
+            if len(self.join_queue) > 0:
+                user_info = self.join_queue[0]
+                # 사용자 이미지 캐시 저장
+                group = user_info['group']
+                user_id = user_info['user_id']
+                img_url = user_info['profile_img']
+                image = self.get_cropped_image(user_id, img_url, self.profile_size)
+                user_info['profile'] = image               
+                self.join_map[user_id] = user_info
+
+                # 사용자 닉네임과 이미지와 함께 유닛(솔져) 생성
+                spawn_soldier = self.spawn_soldier(group, user_info)
+                
+                del self.join_queue[0]       
+       
+
+    def test_test(self, user_id, img_url, size):
+        print("[test]")
+        print(user_id)
+        print(img_url)
+        print(size)
+
+    # 원 모양으로 크롭된 이미지 가져오기
+    # user_id에 대한 캐시된 이미지 있으면 바로 가져온다.
+    # 없으면 img_url을 통해 이미지를 다운 받고 crop 후 이미지 저장
+    # return: pygame에서 사용할 수 있는 Image를 반환
+    def get_cropped_image(self, user_id, img_url, size):
+        print("[get_cropped_image]")
+
+        cache_path = "game/res/cache/profile/%s.png" % user_id
+
+        # 캐시 파일 존재 확인
+        is_file = os.path.isfile(cache_path)
+        
+        image = None
+        if is_file:
+            image = pygame.transform.scale(pygame.image.load(cache_path), size)
+        else:
+            image_str = urlopen(img_url).read()
+            # use PIL
+            pil_img = Image.open(io.BytesIO(image_str))
+            
+            height,width = pil_img.size
+            lum_img = Image.new('L', [height,width] , 0)
+            
+            draw = ImageDraw.Draw(lum_img)
+            draw.pieslice([(0,0), (height,width)], 0, 360, 
+                        fill = 255, outline = "white")
+            img_arr =np.array(pil_img)
+            lum_img_arr =np.array(lum_img)                    
+            final_img_arr = np.dstack((img_arr,lum_img_arr))                        
+
+            final_pil_img = Image.fromarray(final_img_arr)
+
+            # 캐시 파일 저장
+            final_pil_img.save(cache_path, 'png')
+            image = pygame.transform.scale(pygame.image.load(cache_path), size)
+        return image
 
     async def print_donation(self):        
         current_time = 0       
@@ -876,19 +927,35 @@ class Game:
                     print("[print_donation error]:%s" % e)
                     del self.donation_queue[0]
 
-           
-    def spawn_soldier(self, group):
-        print("[spawn_soldier]:%s"%group)
+
+    ####### SPAWN LOGIC #######       
+    def spawn_soldier(self, group, user_info):
+        #print("[spawn_soldier]:%s, %s"%(group, user_info))
+
+        ch_name = "%s_soldier"%group
+        profile_img = None
+
+        if user_info != None:
+            ch_name = user_info['nickname']
+            if 'profile' in user_info:
+                profile_img = user_info['profile']
+
+        new_soldier = None
         if group == 'right':
             new_soldier = characters.SoldierSprite(size=self.soldier_size, position=RIGHT_SPAWN_POSITION, movement=(-1,0), state=1, group='right', 
-                                                hp=100, power=1, name='%s_soldier'%group, images=soldier_images_right, game=self)
+                                                hp=100, power=1, name=ch_name, profile=profile_img, images=soldier_images_right, game=self)
             self.right_group.add(new_soldier)
             self.sprite_group.add(new_soldier)
         elif group == 'left':
             new_soldier = characters.SoldierSprite(size=self.soldier_size, position=LEFT_SPAWN_POSITION, movement=(1,0), state=1, group='left', 
-                                            hp=100, power=1, name='%s_soldier'%group, images=soldier_images_left, game=self)
+                                            hp=100, power=1, name=ch_name, profile=profile_img, images=soldier_images_left, game=self)
             self.left_group.add(new_soldier)
             self.sprite_group.add(new_soldier)
+
+        if user_info != None and new_soldier != None:
+            user_info = self.join_map[user_info['user_id']]
+            user_info['spawn_units'].add(new_soldier)
+            self.join_map[user_info['user_id']] = user_info
         
     def spawn_knight(self, group):
         if group == 'right':
@@ -913,9 +980,7 @@ class Game:
             self.sprite_group.add(new_knight)
         
             
-        
-
-
+    ####### SKILL LOGIC #######
     def spell_lightning(self, group_name): 
         print("%s group spell lightning!" % group_name)     
         target_group = None

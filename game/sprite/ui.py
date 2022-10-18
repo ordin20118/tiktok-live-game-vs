@@ -25,7 +25,7 @@ class SkillMenuSprite(pygame.sprite.Sprite):
         # mt와 결합하여 animation_time을 계산할 시간 초기화
         self.current_time = 0
 
-    def draw(self):
+    def draw(self, mt):
         #print("메뉴 DRAW")
         name_text = self.game.main_font_15.render(self.name, True, self.game.COLOR_WHITE)            
         name_text_rect = name_text.get_rect()        
@@ -75,7 +75,7 @@ class DonationSprite(pygame.sprite.Sprite):
         # mt와 결합하여 animation_time을 계산할 시간 초기화
         self.current_time = 0
 
-    def draw(self):
+    def draw(self, mt):
         #print("메뉴 DRAW")
         name_text = self.game.main_font_15.render(self.name, True, self.game.COLOR_WHITE)            
         name_text_rect = name_text.get_rect()        
