@@ -1,16 +1,16 @@
-{"name": "서울", "rank": 0, "win": 35, "lose": 34, "draw": 31, "top10Donator": []}
-{"name": "부산", "rank": 0, "win": 21, "lose": 30, "draw": 23, "top10Donator": []}
-{"name": "대구", "rank": 0, "win": 25, "lose": 40, "draw": 14, "top10Donator": []}
-{"name": "인천", "rank": 0, "win": 30, "lose": 29, "draw": 28, "top10Donator": []}
-{"name": "광주", "rank": 0, "win": 30, "lose": 36, "draw": 20, "top10Donator": []}
-{"name": "대전", "rank": 0, "win": 25, "lose": 22, "draw": 11, "top10Donator": []}
-{"name": "울산", "rank": 0, "win": 37, "lose": 32, "draw": 33, "top10Donator": []}
-{"name": "세종", "rank": 0, "win": 34, "lose": 24, "draw": 33, "top10Donator": []}
-{"name": "경기", "rank": 0, "win": 21, "lose": 26, "draw": 23, "top10Donator": []}
-{"name": "경남", "rank": 0, "win": 26, "lose": 24, "draw": 25, "top10Donator": []}
-{"name": "경북", "rank": 0, "win": 31, "lose": 27, "draw": 22, "top10Donator": []}
-{"name": "전남", "rank": 0, "win": 35, "lose": 39, "draw": 27, "top10Donator": []}
-{"name": "전북", "rank": 0, "win": 28, "lose": 30, "draw": 27, "top10Donator": []}
-{"name": "강원", "rank": 0, "win": 24, "lose": 27, "draw": 25, "top10Donator": []}
-{"name": "충북", "rank": 0, "win": 28, "lose": 38, "draw": 24, "top10Donator": []}
-{"name": "충남", "rank": 0, "win": 29, "lose": 1, "draw": 16, "top10Donator": []}
+{"name": "서울", "rank": 4, "score": 70, "win": 36, "lose": 34, "draw": 32, "top10Donator": [], "update_time": 1667218930.9840477}
+{"name": "부산", "rank": 15, "score": 40, "win": 21, "lose": 30, "draw": 29, "top10Donator": [], "update_time": 1667219904.225087}
+{"name": "대구", "rank": 16, "score": 24, "win": 25, "lose": 41, "draw": 15, "top10Donator": [], "update_time": 1667111485.4086468}
+{"name": "인천", "rank": 6, "score": 62, "win": 30, "lose": 30, "draw": 33, "top10Donator": [], "update_time": 1667219904.225087}
+{"name": "광주", "rank": 12, "score": 46, "win": 30, "lose": 36, "draw": 22, "top10Donator": [], "update_time": 1667207686.0675588}
+{"name": "대전", "rank": 11, "score": 46, "win": 27, "lose": 22, "draw": 14, "top10Donator": [], "update_time": 1667219714.1712935}
+{"name": "울산", "rank": 2, "score": 76, "win": 37, "lose": 33, "draw": 35, "top10Donator": [], "update_time": 1667218930.9840477}
+{"name": "세종", "rank": 1, "score": 77, "win": 34, "lose": 24, "draw": 33, "top10Donator": [], "update_time": 1667111485.4086468}
+{"name": "경기", "rank": 14, "score": 41, "win": 21, "lose": 27, "draw": 26, "top10Donator": [], "update_time": 1667219334.0569522}
+{"name": "경남", "rank": 9, "score": 55, "win": 26, "lose": 24, "draw": 27, "top10Donator": [], "update_time": 1667219334.0569522}
+{"name": "경북", "rank": 7, "score": 62, "win": 31, "lose": 27, "draw": 27, "top10Donator": [], "update_time": 1667111485.4086468}
+{"name": "전남", "rank": 5, "score": 68, "win": 37, "lose": 39, "draw": 33, "top10Donator": [], "update_time": 1667219714.1712935}
+{"name": "전북", "rank": 8, "score": 56, "win": 29, "lose": 32, "draw": 30, "top10Donator": [], "update_time": 1667219524.118921}
+{"name": "강원", "rank": 10, "score": 51, "win": 25, "lose": 28, "draw": 29, "top10Donator": [], "update_time": 1667207686.0675588}
+{"name": "충북", "rank": 13, "score": 42, "win": 28, "lose": 38, "draw": 24, "top10Donator": [], "update_time": 1667111485.4086468}
+{"name": "충남", "rank": 3, "score": 74, "win": 29, "lose": 1, "draw": 17, "top10Donator": [], "update_time": 1667219524.118921}

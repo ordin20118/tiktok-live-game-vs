@@ -1,4 +1,5 @@
 import pygame
+import random
 
 # 기본 오브젝트 클래스
 class BaseObject:
@@ -110,7 +111,6 @@ class SoldierSprite(pygame.sprite.Sprite, BaseObject):
         self.current_attack_time = 0
 
     def update(self, mt, game):
-        # update를 통해 캐릭터의 이미지가 계속 반복해서 나타나도록 한다.
         
         self.move()
         
@@ -202,9 +202,13 @@ class SoldierSprite(pygame.sprite.Sprite, BaseObject):
 
                 # attack loop time 경과가 animation_time을 넘어서면 새로운 이미지 출력 
                 if self.current_attack_time >= self.animation_time * 10:
-                    self.current_attack_time = 0
-                    #self.game.sound_map['sword_attack'].set_volume(0.1)
-                    #self.game.sound_map['sword_attack'].play()
+                    self.current_attack_time = 0                    
+                    
+                    # 20% 확률로 출력
+                    rnum = random.randint(0, 4)
+                    if rnum == 1:
+                        self.game.sound_map['sword_attack'].play()
+
                     for enemy in collide:
                         if enemy.type == 1:
                             enemy.damaged(self.power)
@@ -467,9 +471,13 @@ class CastleSprite(pygame.sprite.Sprite, BaseObject):
             self.img_index_start = 0
             self.img_index_end = 0
         elif self.hp >= self.hp_max * 0.25:
+            if self.img_index_start == 0:
+                self.game.sound_map['collapse'].play()
             self.img_index_start = 1
             self.img_index_end = 1
         elif self.hp <= self.hp_max * 0.1:
+            if self.img_index_start == 1:
+                self.game.sound_map['collapse'].play()
             self.img_index_start = 2
             self.img_index_end = 2
 

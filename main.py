@@ -79,6 +79,7 @@ class Game:
         # 상태 변수 설정
         # ready
         self.is_end_ready_animation = False
+        self.is_rank_updated = False
         self.is_set_candidate = False 
         self.is_set_tiles = False
         self.is_set_castle = False  
@@ -110,12 +111,15 @@ class Game:
         self.COLOR_GREEN_LIGHT = (183, 240, 177)
         self.COLOR_RED_LIGHT = (255, 167, 167)
         self.COLOR_GREY_LIGHT = (213, 213, 213)
+        self.COLOR_PURPLE = (95, 0, 255)
         self.main_font_60 = pygame.font.Font("game/res/font/NanumBarunGothic.ttf", 60)
         self.main_font_30 = pygame.font.Font("game/res/font/NanumBarunGothic.ttf", 30)   
         self.main_font_20 = pygame.font.Font("game/res/font/NanumBarunGothic.ttf", 20) 
         self.main_font_15 = pygame.font.Font("game/res/font/NanumBarunGothic.ttf", 15) 
         self.main_font_13 = pygame.font.Font("game/res/font/NanumBarunGothic.ttf", 13) 
         self.main_font_11 = pygame.font.Font("game/res/font/NanumBarunGothic.ttf", 11) 
+
+        self.sebang_font_30_bold = pygame.font.Font("game/res/font/SEBANGGothicBold.ttf", 30)
         #text = main_font.render("Test Text", True, COLOR_BLACK)     # 문자열, antialias, 글자색
         
         self.message_queue = []     # 웹소켓 전송 메시지큐
@@ -125,7 +129,7 @@ class Game:
         ### 시간 관련 변수 ###
         self.auto_player_spawn_term = 500 # 160      자동 플레이어 생성 주기
         self.auto_player_spawn_time = 0   #          자동 플레이어 생성 딜레이 시간
-        self.game_timer_term = 60 * 0.1    # 게임 플레이 제한 시간 - 240초 => 4분
+        self.game_timer_term = 60 * 3    # 게임 플레이 제한 시간 - 240초 => 4분
         self.test_count = 0
 
         self.auto_skill_time = 0    # TODO: remove - for test
@@ -197,6 +201,7 @@ class Game:
 
 
         # 랭킹 정보 로드
+        self.rank_list = []
         self.rank = {}
         f = open("game/data/city_rank.txt", 'r', encoding='UTF-8')
         while True:
@@ -241,6 +246,11 @@ class Game:
                 # 다음 게임 안내 애니메이션
                 #   - < ㅁㅁ vs ㅁㅁ >  => 이와 유사하게 애니메이션 연출
 
+                # 순위 업데이트
+                if self.is_rank_updated == False:
+                    self.update_rank()
+                    self.is_rank_updated = True
+
                 # 대결 지역 선정 - 메모리에서 가져다가 사용한다.
                 # 랜덤 함수 사용                 
                 if self.is_set_candidate == False:
@@ -249,13 +259,9 @@ class Game:
                     self.left_name = self.candidates[left_idx]
                     del tmp_arr[left_idx]
 
-                    print(tmp_arr)
-
                     right_idx = random.randint(0, len(tmp_arr) - 1)
                     self.right_name = self.candidates[right_idx]
                     del tmp_arr[right_idx]
-
-                    print(tmp_arr)
 
                     if self.left_name == self.right_name:
                         continue
@@ -297,7 +303,7 @@ class Game:
                 
                 
                 # 모든 처리가 완료되면 game state START로 변경
-                if self.is_end_ready_animation and self.is_set_candidate and self.is_set_castle:
+                if self.is_end_ready_animation and self.is_set_candidate and self.is_rank_updated and self.is_set_castle:
                     self.state = GAME_STATE_START
                     print("[[ Complete Ready Process ]]")
 
@@ -346,13 +352,22 @@ class Game:
                 if self.is_update_rank == False:                    
                     left_rank_info = self.rank[self.left_castle.name]
                     right_rank_info = self.rank[self.right_castle.name]
+                    
+                    now_time = time.time()
                     if self.left_castle.hp > self.right_castle.hp:
                         #print("[[ %s WIN!! ]]" % self.left_castle.name) 
                         self.winner = self.left_castle.name
                         self.loser = self.right_castle.name
                         self.is_draw = False               
                         left_rank_info['win'] = left_rank_info['win'] + 1                    
-                        right_rank_info['lose'] = right_rank_info['lose'] + 1                    
+                        right_rank_info['lose'] = right_rank_info['lose'] + 1       
+                        
+                        left_rank_info['update_time'] = now_time
+                        right_rank_info['update_time'] = now_time
+
+                        # self.is_draw = True   
+                        # left_rank_info['draw'] = left_rank_info['draw'] + 1                    
+                        # right_rank_info['draw'] = right_rank_info['draw'] + 1          
 
                     elif self.left_castle.hp < self.right_castle.hp:
                         #print("[[ %s WIN!! ]]" % self.right_castle.name)   
@@ -362,11 +377,20 @@ class Game:
                         left_rank_info['lose'] = left_rank_info['lose'] + 1                    
                         right_rank_info['win'] = right_rank_info['win'] + 1
 
+                        left_rank_info['update_time'] = now_time
+                        right_rank_info['update_time'] = now_time
+                        # self.is_draw = True   
+                        # left_rank_info['draw'] = left_rank_info['draw'] + 1                    
+                        # right_rank_info['draw'] = right_rank_info['draw'] + 1
+
                     else:
                         #print("[[ DRAW ]]")
                         self.is_draw = True   
                         left_rank_info['draw'] = left_rank_info['draw'] + 1                    
                         right_rank_info['draw'] = right_rank_info['draw'] + 1
+
+                        left_rank_info['update_time'] = now_time
+                        right_rank_info['update_time'] = now_time
 
                     self.rank[self.left_castle.name] = left_rank_info
                     self.rank[self.right_castle.name] = right_rank_info
@@ -378,6 +402,7 @@ class Game:
                         f.write(json.dumps(self.rank[candidate], ensure_ascii=False) + '\n')
                     f.close()
                     print("updated rank file")
+                    self.update_rank()
 
                     self.is_update_rank = True
                     self.draw_result = True
@@ -396,6 +421,7 @@ class Game:
 
                     self.is_end_ready_animation = False
                     self.is_set_candidate = False
+                    self.is_rank_updated = False
                     self.is_set_tiles = False   
                     self.is_set_castle = False  
                     self.is_set_timer = False
@@ -436,23 +462,23 @@ class Game:
                                         width=3, border_radius=0, border_top_left_radius=10, border_top_right_radius=10, border_bottom_left_radius=10, border_bottom_right_radius=10)
 
             # 참가 설명 텍스트
-            text_join_title = self.main_font_11.render("[ 참가 ]", True, self.COLOR_BLACK)
+            text_join_title = self.main_font_15.render("[ 참가 ]", True, self.COLOR_BLACK)
             text_join_title_rect = text_join_title.get_rect()
             text_join_title_rect.centerx = desc_rect_fill.centerx
-            text_join_desc = self.main_font_11.render("원하는 진영 이름 채팅으로 입력", True, self.COLOR_BLACK)
+            text_join_desc = self.main_font_11.render("응원하는 진영 이름 채팅으로 입력", True, self.COLOR_BLACK)
             text_join_desc_rect = text_join_desc.get_rect()
             text_join_desc_rect.centerx = desc_rect_fill.centerx            
             self.SCREEN.blit(text_join_title, (text_join_title_rect.x, desc_rect_y + 15))
             self.SCREEN.blit(text_join_desc, (text_join_desc_rect.x, desc_rect_y + 35))
             
             # 유닛 추가 설명 텍스트
-            text_join_title = self.main_font_11.render("[ 유닛 추가 ]", True, self.COLOR_BLACK)
+            text_join_title = self.main_font_15.render("[ 유닛 추가 ]", True, self.COLOR_BLACK)
             text_join_title_rect = text_join_title.get_rect()
             text_join_title_rect.centerx = desc_rect_fill.centerx
-            text_join_desc = self.main_font_11.render("Tap x 5 => 1 Soldier", True, self.COLOR_BLACK)
+            text_join_desc = self.main_font_13.render("Tap x 5 => 1 Soldier", True, self.COLOR_BLACK)
             text_join_desc_rect = text_join_desc.get_rect()
             text_join_desc_rect.centerx = desc_rect_fill.centerx        
-            text_skill_desc = self.main_font_11.render("Tap x 15 => 50% Lightning", True, self.COLOR_BLACK)
+            text_skill_desc = self.main_font_13.render("Tap x 15 => 10% Lightning", True, self.COLOR_BLACK)
             text_skill_desc_rect = text_skill_desc.get_rect()
             text_skill_desc_rect.centerx = desc_rect_fill.centerx        
             self.SCREEN.blit(text_join_title, (text_join_title_rect.x, desc_rect_y + 65))
@@ -460,8 +486,40 @@ class Game:
             self.SCREEN.blit(text_skill_desc, (text_skill_desc_rect.x, desc_rect_y + 105))
 
             # 랭킹 정보 출력
-            # TODO
-            
+            rank_rect_x = SCREEN_WIDTH * 0.54
+            rank_rect_y = desc_rect_y
+            rank_rect_width = SCREEN_WIDTH * 0.43
+            rank_rect_fill = pygame.draw.rect(self.SCREEN, (255, 255, 228), [rank_rect_x+3, rank_rect_y+3, rank_rect_width-6, rank_rect_width * 1.22 - 6], 
+                                        border_radius=0, border_top_left_radius=5, border_top_right_radius=5, border_bottom_left_radius=5, border_bottom_right_radius=5)
+            rank_rect_border = pygame.draw.rect(self.SCREEN, (153, 56, 0), [rank_rect_x, rank_rect_y, rank_rect_width, rank_rect_width * 1.22], 
+                                        width=3, border_radius=0, border_top_left_radius=10, border_top_right_radius=10, border_bottom_left_radius=10, border_bottom_right_radius=10)
+
+            # 랭크 타이틀
+            text_rank_title = self.main_font_20.render("[  R A N K  ]", True, self.COLOR_PURPLE)
+            text_rank_title_rect = text_rank_title.get_rect()
+            text_rank_title_rect.centerx = rank_rect_fill.centerx
+            self.SCREEN.blit(text_rank_title, (text_rank_title_rect.x, rank_rect_y + 15))
+
+
+            for idx, r in enumerate(self.rank_list):
+                rank_text = self.main_font_15.render("%d위. %s  %s점"%(r['rank'], r['name'], r['score']), True, self.COLOR_BLACK)
+                rank_text_rect = rank_text.get_rect()
+                rank_text_rect.x = rank_rect_fill.x + (SCREEN_WIDTH * 0.03)
+
+                interval = r['rank'] * 9 + (r['rank'] * 15)
+                self.SCREEN.blit(rank_text, (rank_text_rect.x, (rank_rect_y + 15 + text_rank_title_rect.height) + interval))
+                if idx == 9:
+                    break
+
+            for idx, r in enumerate(self.rank_list[10:-1]):
+                rank_text = self.main_font_15.render("%d위. %s  %s점"%(r['rank'], r['name'], r['score']), True, self.COLOR_BLACK)
+                rank_text_rect = rank_text.get_rect()
+                rank_text_rect.x = rank_rect_fill.x + 10 + SCREEN_WIDTH * 0.21
+
+                interval = (r['rank'] - 10) * 9 + ((r['rank'] - 10) * 15)
+                self.SCREEN.blit(rank_text, (rank_text_rect.x, (rank_rect_y + 15 + text_rank_title_rect.height) + interval))
+                
+                    
 
 
 
@@ -495,7 +553,7 @@ class Game:
                 timer_str = "%s : %s" % (min_str, sec_str)
                 #print("남은 시간 %s" % timer_str)
 
-                timer_text = self.main_font_30.render(timer_str, True, self.COLOR_BLACK)
+                timer_text = self.sebang_font_30_bold.render(timer_str, True, self.COLOR_BLACK)
                 timer_text_rect = timer_text.get_rect()
                 timer_text_rect.centerx = SCREEN_WIDTH * 0.5
                 self.SCREEN.blit(timer_text, (timer_text_rect.x, SCREEN_HEIGHT * 0.38))
@@ -648,7 +706,7 @@ class Game:
                         #self.donation_queue.append(msg_obj)
 
                         if msg_obj['like_count'] >= 15 and msg_obj['user_id'] in self.join_map:
-                            rand_int = random.randint(0, 1)
+                            rand_int = random.randint(0, 9)
                             if rand_int == 1:
                                 user_info = self.join_map[msg_obj['user_id']]
                                 if user_info['group'] == 'left':
@@ -825,12 +883,32 @@ class Game:
                 
                 del self.join_queue[0]       
        
+    def update_rank(self):
+        self.rank_list = []
+        for key in self.rank:
+            tmp_rank = self.rank[key]
+            score = (tmp_rank['win'] * 2) + (tmp_rank['draw'] * 1) - (tmp_rank['lose'] * 1)
+            tmp_rank['score'] = score
+            self.rank[key] = tmp_rank
+            self.rank_list.append(tmp_rank)
+            #print(tmp_rank)
 
-    def test_test(self, user_id, img_url, size):
-        print("[test]")
-        print(user_id)
-        print(img_url)
-        print(size)
+        self.sort_rank()
+        
+    def sort_rank(self):        
+        self.rank_list.sort(key = lambda object : (object['score'], object['update_time']), reverse=True)
+
+        for idx, r in enumerate(self.rank_list):
+            self.rank[r['name']]['rank'] = idx + 1
+            self.rank_list[idx]['rank'] = idx + 1
+
+        self.print_rank()
+
+    def print_rank(self):
+        print("[[ RANK ]] ====================")
+        for idx, rank in enumerate(self.rank_list):
+            print("[Top %d] %s => %s" % (idx+1, rank['name'], rank['score']))
+        print("===============================")
 
     # 원 모양으로 크롭된 이미지 가져오기
     # user_id에 대한 캐시된 이미지 있으면 바로 가져온다.
@@ -850,6 +928,7 @@ class Game:
         else:
             try:
                 image_str = urlopen(img_url).read()
+
                 # use PIL
                 pil_img = Image.open(io.BytesIO(image_str))
                 
@@ -867,9 +946,9 @@ class Game:
 
                 # 캐시 파일 저장
                 final_pil_img.save(cache_path, 'png')
-                image = pygame.transform.scale(pygame.image.load(cache_path), size)
+                image = pygame.transform.scale(pygame.image.load(cache_path), self.donation_size)
             except:
-                image = pygame.transform.scale(pygame.image.load('game/res/cache/profile/default.png'), self.right_profile_size)
+                image = pygame.transform.scale(pygame.image.load('game/res/default.png'), self.donation_size)
 
         return image
 
@@ -908,6 +987,7 @@ class Game:
                     else:
                         try:
                             image_str = urlopen(donation_obj['profile_img']).read()
+
                             # use PIL
                             pil_img = Image.open(io.BytesIO(image_str))
                             
@@ -927,7 +1007,7 @@ class Game:
                             final_pil_img.save(cache_path, 'png')
                             image = pygame.transform.scale(pygame.image.load(cache_path), self.donation_size)
                         except:
-                            image = pygame.transform.scale(pygame.image.load('game/res/cache/profile/default.png'), self.right_profile_size)
+                            image = pygame.transform.scale(pygame.image.load('game/res/default.png'), self.donation_size)
 
                     tmps = []
                     tmps.append(image)                    
@@ -956,12 +1036,12 @@ class Game:
         new_soldier = None
         if group == 'right':
             new_soldier = characters.SoldierSprite(size=self.soldier_size, position=RIGHT_SPAWN_POSITION, movement=(-1,0), state=1, group='right', 
-                                                hp=100, power=1, name=ch_name, profile=profile_img, images=soldier_images_right, game=self)
+                                                hp=150, power=1, name=ch_name, profile=profile_img, images=soldier_images_right, game=self)
             self.right_group.add(new_soldier)
             self.sprite_group.add(new_soldier)
         elif group == 'left':
             new_soldier = characters.SoldierSprite(size=self.soldier_size, position=LEFT_SPAWN_POSITION, movement=(1,0), state=1, group='left', 
-                                            hp=100, power=1, name=ch_name, profile=profile_img, images=soldier_images_left, game=self)
+                                            hp=150, power=1, name=ch_name, profile=profile_img, images=soldier_images_left, game=self)
             self.left_group.add(new_soldier)
             self.sprite_group.add(new_soldier)
 
@@ -989,7 +1069,7 @@ class Game:
             sp_xy = (RIGHT_SPAWN_POSITION[0], new_y)
 
             new_knight = characters.KnightSprite(size=self.knight_size, position=sp_xy, movement=(speed,0), group='right', 
-                                                        hp=300, power=10, name=ch_name, profile=profile_img, images=knight_images_right, game=self)
+                                                        hp=1000, power=10, name=ch_name, profile=profile_img, images=knight_images_right, game=self)
             self.right_group.add(new_knight)
             self.sprite_group.add(new_knight)
         else:
@@ -998,7 +1078,7 @@ class Game:
             new_y = sp_y - (self.knight_size[0] - self.soldier_size[0])
             sp_xy = (LEFT_SPAWN_POSITION[0], new_y)
             new_knight = characters.KnightSprite(size=self.knight_size, position=sp_xy, movement=(speed,0), group='left', 
-                                                        hp=300, power=10, name=ch_name, profile=profile_img, images=knight_images_left, game=self)
+                                                        hp=1000, power=10, name=ch_name, profile=profile_img, images=knight_images_left, game=self)
         
             self.left_group.add(new_knight)
             self.sprite_group.add(new_knight)
@@ -1029,7 +1109,7 @@ class Game:
             new_y = sp_y - (self.lightning_size[1] - self.soldier_size[0])
             sp_xy = (sp_x, new_y)
             new_lightning = skills.LightningSprite(size=self.lightning_size, position=sp_xy, movement=(0,0), group=group_name, 
-                                                    hp=100, power=999, name='%s_thunder'%group_name, skill_type=1, images=lightning_images, animation_count=2, sound=self.sound_map['thunder'], game=self)
+                                                    hp=100, power=250, name='%s_thunder'%group_name, skill_type=1, images=lightning_images, animation_count=2, sound=self.sound_map['thunder'], game=self)
             self.skill_group.add(new_lightning)
             self.sprite_group.add(new_lightning)
 

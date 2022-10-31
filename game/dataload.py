@@ -172,19 +172,22 @@ def import_menu_images(size, skills):
 def import_sound():
     sound_map = {}
     devil_sound = pygame.mixer.Sound("game/res/sound/devil_boss_laugh.mp3")
-    devil_sound.set_volume(0.2)
+    devil_sound.set_volume(0.1)
     sound_map['devil'] = devil_sound
     donation_sound = pygame.mixer.Sound("game/res/sound/donation.mp3")
-    donation_sound.set_volume(0.7)
+    donation_sound.set_volume(0.2)
     sound_map['donation'] = donation_sound
     thunder_sound = pygame.mixer.Sound("game/res/sound/thunder_3.mp3")
     thunder_sound.set_volume(0.1)
     sound_map['thunder'] = thunder_sound
     stage_clear_sound = pygame.mixer.Sound("game/res/sound/stage_clear.mp3")
-    stage_clear_sound.set_volume(0.7)
+    stage_clear_sound.set_volume(0.1)
     sound_map['stage_clear'] = stage_clear_sound
-    sword_attack_sound = pygame.mixer.Sound("game/res/sound/sword_attack.mp3")
+    sword_attack_sound = pygame.mixer.Sound("game/res/sound/sword_attack2.mp3")
     sword_attack_sound.set_volume(0.1)
     sound_map['sword_attack'] = sword_attack_sound
+    collapse_sound = pygame.mixer.Sound("game/res/sound/collapse_sound.mp3")
+    collapse_sound.set_volume(0.1)
+    sound_map['collapse'] = collapse_sound
     return sound_map
     
