@@ -170,12 +170,21 @@ class SoldierSprite(pygame.sprite.Sprite, BaseObject):
         
         # 닉네임 출력        
         if self.name != 'left_soldier' and self.name != 'right_soldier' and self.name != 'dead_soldier':
-            nickname_text = self.game.main_font_13.render(self.name, True, self.game.COLOR_BLACK)
+            name = self.name
+            if len(self.name) > 10:
+                name = self.name[0:10]
+                
+            nickname_text = self.game.arialbd_font_13.render(name, True, self.game.COLOR_BLACK)
             nickname_text_rect = nickname_text.get_rect()
             nickname_text_size = nickname_text_rect.size            
             nickname_text_rect.centerx = self.rect.centerx            
             self_size_y = self.rect.size[1]
-            self.game.SCREEN.blit(nickname_text, (nickname_text_rect.x, self.rect.y + self_size_y + 2))
+            nick_xy = (nickname_text_rect.x, self.rect.y + self_size_y + 2)
+            self.game.SCREEN.blit(nickname_text, nick_xy)
+        
+            # 프로필 출력
+            if self.profile != None:
+                self.game.SCREEN.blit(self.profile, (nickname_text_rect.x - self.game.profile_size[0] - 5, nick_xy[1] - (self.game.profile_size[1] * 0.2)))
 
         # 체력바 그리기
         if self.hp < self.hp_max:
@@ -512,21 +521,21 @@ class CastleSprite(pygame.sprite.Sprite, BaseObject):
         # 그룹명 그리기 - 이름 길이만큼 길어져야한다.        
         if self.group == 'left':            
             # 텍스트 설정
-            text = self.game.main_font_15.render(self.name, True, self.game.COLOR_BLACK)            
+            text = self.game.main_font_20.render(self.name, True, self.game.COLOR_BLACK)            
             text_rect = text.get_rect()
             text_size = text_rect.size
             #text_rect.centerx = background_rect.centerx            
             
             # 텍스트보다 가로 +20, 세로 +10
-            background_rect = pygame.draw.rect(self.game.SCREEN, (255, 255, 255), [self.rect.x + 20, self.rect.y - 80, text_size[0] + 20, text_size[1] + 10])
-            self.game.SCREEN.blit(text, (self.rect.x + 20 + 10, self.rect.y - 80 + 5))
+            background_rect = pygame.draw.rect(self.game.SCREEN, (255, 255, 255), [self.rect.x + 40, self.rect.y - 80, text_size[0] + 20, text_size[1] + 10])
+            self.game.SCREEN.blit(text, (self.rect.x + 40 + 10, self.rect.y - 80 + 5))
 
         else:            
-            text = self.game.main_font_15.render(self.name, True, self.game.COLOR_BLACK)
+            text = self.game.main_font_20.render(self.name, True, self.game.COLOR_BLACK)
             text_rect = text.get_rect()
             text_size = text_rect.size
-            pygame.draw.rect(self.game.SCREEN, (255, 255, 255), [self.game.SCREEN.get_width() - text_size[0] - 10 - 10 - 2, self.rect.y - 80 , text_size[0] + 20, text_size[1] + 10])
-            self.game.SCREEN.blit(text, (self.game.SCREEN.get_width() - text_size[0] - 10 - 2, self.rect.y - 80 + 5))
+            pygame.draw.rect(self.game.SCREEN, (255, 255, 255), [self.game.SCREEN.get_width() - text_size[0] - 30 - 10 - 2, self.rect.y - 80 , text_size[0] + 20, text_size[1] + 10])
+            self.game.SCREEN.blit(text, (self.game.SCREEN.get_width() - text_size[0] - 30 - 2, self.rect.y - 80 + 5))
 
 
     def collide_enemy(self, mt, enemy_group, game):

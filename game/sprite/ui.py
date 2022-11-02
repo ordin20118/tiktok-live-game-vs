@@ -107,4 +107,3 @@ class DonationSprite(pygame.sprite.Sprite):
                 self.kill()    
                 return
         
-        

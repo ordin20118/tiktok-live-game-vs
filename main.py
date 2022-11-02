@@ -9,6 +9,7 @@ import random
 import os
 import sys
 import websockets
+import chardet
 from game.sprite import characters
 from game.sprite import skills
 from game.sprite import tiles
@@ -108,6 +109,8 @@ class Game:
         self.COLOR_WHITE = (255, 255, 255)
         self.COLOR_YELLOW = (255, 228, 0)
         self.COLOR_BLUE_LIGHT = (103, 153, 255)
+        self.COLOR_BLUE_DEEP = (1, 0, 255)
+        self.COLOR_BLUE_DARK = (0, 34, 102)
         self.COLOR_GREEN_LIGHT = (183, 240, 177)
         self.COLOR_RED_LIGHT = (255, 167, 167)
         self.COLOR_GREY_LIGHT = (213, 213, 213)
@@ -119,6 +122,9 @@ class Game:
         self.main_font_13 = pygame.font.Font("game/res/font/NanumBarunGothic.ttf", 13) 
         self.main_font_11 = pygame.font.Font("game/res/font/NanumBarunGothic.ttf", 11) 
 
+        self.arialbd_font_13 = pygame.font.Font("game/res/font/arialbd.ttf", 13) 
+        
+
         self.sebang_font_30_bold = pygame.font.Font("game/res/font/SEBANGGothicBold.ttf", 30)
         #text = main_font.render("Test Text", True, COLOR_BLACK)     # 문자열, antialias, 글자색
         
@@ -129,10 +135,8 @@ class Game:
         ### 시간 관련 변수 ###
         self.auto_player_spawn_term = 500 # 160      자동 플레이어 생성 주기
         self.auto_player_spawn_time = 0   #          자동 플레이어 생성 딜레이 시간
-        self.game_timer_term = 60 * 3    # 게임 플레이 제한 시간 - 240초 => 4분
+        self.game_timer_term = 60 * 7    # 게임 플레이 제한 시간 - 240초 => 4분
         self.test_count = 0
-
-        self.auto_skill_time = 0    # TODO: remove - for test
 
         # sprite group 설정
         self.sprite_group = pygame.sprite.Group()
@@ -146,7 +150,7 @@ class Game:
         self.menu_size = ((SCREEN_WIDTH / MAX_SKILL_COUNT) * 0.7, (SCREEN_WIDTH / MAX_SKILL_COUNT) * 0.7)
         #self.menu_size = (150, 150)
         self.donation_size = (SCREEN_WIDTH / 7, SCREEN_WIDTH / 7)
-        self.profile_size = (SCREEN_WIDTH / 10, SCREEN_WIDTH / 10)
+        self.profile_size = (SCREEN_WIDTH / 25, SCREEN_WIDTH / 25)
         self.soldier_size = (60, 60)
         self.knight_size = (90, 90)
         self.lightning_size = (100, 268)
@@ -398,7 +402,7 @@ class Game:
                     # 랭킹 정보 갱신
                     #   - 랭킹 정보 파일 통으로 새로 쓰기
                     f = open("game/data/city_rank.txt", 'w', encoding='UTF-8')
-                    for candidate in self.candidates:                        
+                    for candidate in self.candidates:                             
                         f.write(json.dumps(self.rank[candidate], ensure_ascii=False) + '\n')
                     f.close()
                     print("updated rank file")
@@ -456,34 +460,39 @@ class Game:
             desc_rect_x = SCREEN_WIDTH * 0.08
             desc_rect_y = desc_rect_x
             desc_rect_width = SCREEN_WIDTH * 0.43
-            desc_rect_fill = pygame.draw.rect(self.SCREEN, (255, 255, 228), [desc_rect_x+3, desc_rect_y+3, desc_rect_width-6, desc_rect_width * 0.6 - 6], 
+            desc_rect_fill = pygame.draw.rect(self.SCREEN, (255, 255, 228), [desc_rect_x+3, desc_rect_y+3, desc_rect_width-6, desc_rect_width * 0.7 - 6], 
                                         border_radius=0, border_top_left_radius=5, border_top_right_radius=5, border_bottom_left_radius=5, border_bottom_right_radius=5)
-            desc_rect_border = pygame.draw.rect(self.SCREEN, (153, 56, 0), [desc_rect_x, desc_rect_y, desc_rect_width, desc_rect_width * 0.6], 
+            desc_rect_border = pygame.draw.rect(self.SCREEN, (153, 56, 0), [desc_rect_x, desc_rect_y, desc_rect_width, desc_rect_width * 0.7], 
                                         width=3, border_radius=0, border_top_left_radius=10, border_top_right_radius=10, border_bottom_left_radius=10, border_bottom_right_radius=10)
 
             # 참가 설명 텍스트
             text_join_title = self.main_font_15.render("[ 참가 ]", True, self.COLOR_BLACK)
             text_join_title_rect = text_join_title.get_rect()
             text_join_title_rect.centerx = desc_rect_fill.centerx
-            text_join_desc = self.main_font_11.render("응원하는 진영 이름 채팅으로 입력", True, self.COLOR_BLACK)
+            text_join_desc = self.main_font_11.render("양쪽 진영 중 참가하려는 진영 이름 채팅으로 입력", True, self.COLOR_BLACK)
             text_join_desc_rect = text_join_desc.get_rect()
             text_join_desc_rect.centerx = desc_rect_fill.centerx            
             self.SCREEN.blit(text_join_title, (text_join_title_rect.x, desc_rect_y + 15))
             self.SCREEN.blit(text_join_desc, (text_join_desc_rect.x, desc_rect_y + 35))
             
             # 유닛 추가 설명 텍스트
-            text_join_title = self.main_font_15.render("[ 유닛 추가 ]", True, self.COLOR_BLACK)
+            text_join_title = self.main_font_15.render("[ 참가 후 유닛 추가 ]", True, self.COLOR_BLACK)
             text_join_title_rect = text_join_title.get_rect()
             text_join_title_rect.centerx = desc_rect_fill.centerx
-            text_join_desc = self.main_font_13.render("Tap x 5 => 1 Soldier", True, self.COLOR_BLACK)
+            text_join_desc = self.main_font_13.render("화면 탭 x 5 => 1 Soldier", True, self.COLOR_BLACK)
             text_join_desc_rect = text_join_desc.get_rect()
             text_join_desc_rect.centerx = desc_rect_fill.centerx        
-            text_skill_desc = self.main_font_13.render("Tap x 15 => 10% Lightning", True, self.COLOR_BLACK)
+            text_skill_desc = self.main_font_13.render("화면 탭 x 15 => 10% Lightning", True, self.COLOR_BLACK)
             text_skill_desc_rect = text_skill_desc.get_rect()
             text_skill_desc_rect.centerx = desc_rect_fill.centerx        
+
+            text_knight_desc = self.main_font_13.render("화면 탭 x 15 => 1% Knight", True, self.COLOR_BLACK)
+            text_knight_desc_rect = text_knight_desc.get_rect()
+            text_knight_desc_rect.centerx = desc_rect_fill.centerx        
             self.SCREEN.blit(text_join_title, (text_join_title_rect.x, desc_rect_y + 65))
-            self.SCREEN.blit(text_join_desc, (text_join_desc_rect.x, desc_rect_y + 85))
-            self.SCREEN.blit(text_skill_desc, (text_skill_desc_rect.x, desc_rect_y + 105))
+            self.SCREEN.blit(text_join_desc, (text_join_desc_rect.x, desc_rect_y + 88))
+            self.SCREEN.blit(text_skill_desc, (text_skill_desc_rect.x, desc_rect_y + 111))
+            self.SCREEN.blit(text_knight_desc, (text_knight_desc_rect.x, desc_rect_y + 134))
 
             # 랭킹 정보 출력
             rank_rect_x = SCREEN_WIDTH * 0.54
@@ -495,7 +504,7 @@ class Game:
                                         width=3, border_radius=0, border_top_left_radius=10, border_top_right_radius=10, border_bottom_left_radius=10, border_bottom_right_radius=10)
 
             # 랭크 타이틀
-            text_rank_title = self.main_font_20.render("[  R A N K  ]", True, self.COLOR_PURPLE)
+            text_rank_title = self.main_font_20.render("[  R A N K  ]", True, self.COLOR_BLUE_DARK)
             text_rank_title_rect = text_rank_title.get_rect()
             text_rank_title_rect.centerx = rank_rect_fill.centerx
             self.SCREEN.blit(text_rank_title, (text_rank_title_rect.x, rank_rect_y + 15))
@@ -511,7 +520,7 @@ class Game:
                 if idx == 9:
                     break
 
-            for idx, r in enumerate(self.rank_list[10:-1]):
+            for idx, r in enumerate(self.rank_list[10:]):
                 rank_text = self.main_font_15.render("%d위. %s  %s점"%(r['rank'], r['name'], r['score']), True, self.COLOR_BLACK)
                 rank_text_rect = rank_text.get_rect()
                 rank_text_rect.x = rank_rect_fill.x + 10 + SCREEN_WIDTH * 0.21
@@ -579,7 +588,7 @@ class Game:
                 if self.is_draw:
                     text_draw = self.main_font_60.render("DRAW", True, self.COLOR_GREEN_LIGHT)    
                     text_draw_rect = text_draw.get_rect()
-                    text_draw_rect.centerx = game_over_screen_rect.centerx
+                    text_draw_rect.centerx = game_over_screen_rect.centerx + 50
                     game_over_screen.blit(text_draw, (game_over_screen_rect.size[0] * 0.25, game_over_screen_rect.size[1] * 0.3))                 
                 else:
                     text_win = self.main_font_60.render("WIN", True, self.COLOR_BLUE_LIGHT)    
@@ -659,7 +668,6 @@ class Game:
                     print("[error]:%s" % e)
                     raise
                 
-                # TODO
                 # 도네이션의 경우 무조건 넘겨준다.
                 # 다른 이벤트는 state가 playing이 아니라면 패스
 
@@ -685,7 +693,26 @@ class Game:
                             # 2. 포함되어 있지 않다면 
                             # => 팀에 포함 + 유닛 생성
                             print("[%s]: %s" % (msg_obj['nickname'], msg_obj['comment']))
+
+                            #print(chardet.detect(msg_obj['nickname'].encode()))
+                            #print(chardet.detect(msg_obj['comment'].encode()))                                
+                            try:
+                                
+                                nick = msg_obj['nickname']
+                                com = msg_obj['comment']
+                                
+                                #nick_encoded = nick.encode('utf-8')
+                                #print("nick[%s]/utf-encode[%s]"%(nick, nick_encoded))
+                                #print("nick[%s]/unicode-escape[%s]"%(nick, nick_encoded.decode('unicode_escape')))
+
+                                #print("UTF[%s]: %s" % (msg_obj['nickname'].encode(encoding='UTF-8'), msg_obj['comment']))                                                               
+                                #print("Windows-1253[%s]: %s" % (msg_obj['nickname'].encode(encoding='Windows-1253'), msg_obj['comment']))
+                                
                             
+                            except Exception as e:
+                                print(e)
+
+
                             if msg_obj['comment'].find(self.left_name) != -1:
                                 msg_obj['group'] = 'left'
                                 msg_obj['spawn_units'] = pygame.sprite.Group()
@@ -706,8 +733,21 @@ class Game:
                         #self.donation_queue.append(msg_obj)
 
                         if msg_obj['like_count'] >= 15 and msg_obj['user_id'] in self.join_map:
-                            rand_int = random.randint(0, 9)
+                            
+                            is_knight = False
+                            rand_int = random.randint(0, 99)
                             if rand_int == 1:
+                                is_knight = True
+                                # 나이트 소환
+                                if msg_obj['user_id'] in self.join_map:
+                                    user_info = self.join_map[msg_obj['user_id']]
+                                    if user_info['group'] == 'left':                
+                                        self.spawn_knight('left', user_info)
+                                    else:
+                                        self.spawn_knight('right', user_info)
+                            
+                            rand_int = random.randint(0, 9)
+                            if rand_int == 1 and is_knight == False:
                                 user_info = self.join_map[msg_obj['user_id']]
                                 if user_info['group'] == 'left':
                                     self.spell_lightning('left')
@@ -1011,7 +1051,7 @@ class Game:
 
                     tmps = []
                     tmps.append(image)                    
-                    new_donation = ui.DonationSprite(size=self.donation_size, position=((SCREEN_WIDTH * 0.5) - (self.donation_size[0] * 0.5), SCREEN_HEIGHT * 0.22), group='donation', 
+                    new_donation = ui.DonationSprite(size=self.donation_size, position=((SCREEN_WIDTH * 0.28) - (self.donation_size[0] * 0.5), SCREEN_HEIGHT * 0.22), group='donation', 
                                                     name=donation_obj['nickname'], coin=donation_obj['coin'], images=tmps, sound=self.sound_map['donation'], game=self)
                     self.ui_group.add(new_donation)
                     self.sprite_group.add(new_donation)
@@ -1032,6 +1072,7 @@ class Game:
             ch_name = user_info['nickname']
             if 'profile' in user_info:
                 profile_img = user_info['profile']
+                
 
         new_soldier = None
         if group == 'right':
