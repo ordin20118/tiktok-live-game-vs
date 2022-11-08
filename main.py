@@ -665,174 +665,7 @@ class Game:
             event = await event_queue.get()
             #print("event", event)
             if event.type == pygame.QUIT:
-                break
-            elif event.type == EVENT_SOCKET_MSG:
-                #print("event", event)               
-                msg_obj = None
-                try:
-                    msg_obj = json.loads(event.message)
-                    #print("[[ Message Object ]]")                    
-                    #print(msg_obj)
-                except Exception as e:
-                    print("[error]:%s" % e)
-                    raise
-                
-                # 도네이션의 경우 무조건 넘겨준다.
-                # 다른 이벤트는 state가 playing이 아니라면 패스
-
-                if msg_obj != None:
-                    if msg_obj['code'] == MSG_CODE_COMMENT and self.state == GAME_STATE_PLAYING:
-                        # 채팅에 팀 이름 포함 여부 확인
-                        # 이미 팀에 포함 되어 있는지 확인
-                        if msg_obj['user_id'] in self.join_map:
-                            # 1.이미 팀에 포함되어 있다면 and 해당 사용자의 유닛이 살아 있다면 => 채팅 출력
-                            # TODO: 해당 sprite에 채팅 메시지를 설정하고 채팅 출력 상태를 True로 변경해준다.
-                            #print("[%s]: %s" % (msg_obj['nickname'], msg_obj['comment']))
-                            user_info = self.join_map[msg_obj['user_id']]
-                            #print("%s spawn %d units." % (user_info['nickname'], len(user_info['spawn_units'])))
-                            if len(user_info['spawn_units']) > 0:
-                                #user_info['spawn_units'][0].chat = msg_obj['comment']
-                                for idx, unit in enumerate(user_info['spawn_units']):                                        
-                                    if idx == 0:                    
-                                        unit.chat = msg_obj['comment']
-                                        break
-                                
-                            
-                        else:
-                            # 2. 포함되어 있지 않다면 
-                            # => 팀에 포함 + 유닛 생성
-                            print("[%s]: %s" % (msg_obj['nickname'], msg_obj['comment']))
-
-                            #print(chardet.detect(msg_obj['nickname'].encode()))
-                            #print(chardet.detect(msg_obj['comment'].encode()))                                
-                            try:
-                                
-                                nick = msg_obj['nickname']
-                                com = msg_obj['comment']
-                                
-                                #nick_encoded = nick.encode('utf-8')
-                                #print("nick[%s]/utf-encode[%s]"%(nick, nick_encoded))
-                                #print("nick[%s]/unicode-escape[%s]"%(nick, nick_encoded.decode('unicode_escape')))
-
-                                #print("UTF[%s]: %s" % (msg_obj['nickname'].encode(encoding='UTF-8'), msg_obj['comment']))                                                               
-                                #print("Windows-1253[%s]: %s" % (msg_obj['nickname'].encode(encoding='Windows-1253'), msg_obj['comment']))
-                                
-                            
-                            except Exception as e:
-                                print(e)
-
-
-                            if msg_obj['comment'].find(self.left_name) != -1:
-                                msg_obj['group'] = 'left'
-                                msg_obj['spawn_units'] = pygame.sprite.Group()
-                                self.join_map[msg_obj['user_id']] = msg_obj      
-                                self.join_queue.append(self.join_map[msg_obj['user_id']])                                                     
-                                #self.spawn_soldier('left')
-                            elif msg_obj['comment'].find(self.right_name) != -1:
-                                msg_obj['group'] = 'right'
-                                msg_obj['spawn_units'] = pygame.sprite.Group()
-                                self.join_map[msg_obj['user_id']] = msg_obj
-                                self.join_queue.append(self.join_map[msg_obj['user_id']])
-                                #self.spawn_soldier('right')                               
-
-                           
-                    elif msg_obj['code'] == MSG_CODE_LIKE and self.state == GAME_STATE_PLAYING:
-                        print("[%s] likes count: %d" %(msg_obj['nickname'], msg_obj['like_count']))
-                        #unit_count = int(msg_obj['like_count'] / 5)
-                        #self.donation_queue.append(msg_obj)
-
-                        if msg_obj['like_count'] >= 15 and msg_obj['user_id'] in self.join_map:
-                            
-                            is_knight = False
-                            rand_int = random.randint(0, 99)
-                            if rand_int == 1:
-                                is_knight = True
-                                # 나이트 소환
-                                if msg_obj['user_id'] in self.join_map:
-                                    user_info = self.join_map[msg_obj['user_id']]
-                                    if user_info['group'] == 'left':                
-                                        self.spawn_knight('left', user_info)
-                                    else:
-                                        self.spawn_knight('right', user_info)
-                            
-                            rand_int = random.randint(0, 9)
-                            if rand_int == 1 and is_knight == False:
-                                user_info = self.join_map[msg_obj['user_id']]
-                                if user_info['group'] == 'left':
-                                    self.spell_lightning('left')
-                                else:
-                                    self.spell_lightning('right')                                
-
-                        elif msg_obj['like_count'] >= 5 and msg_obj['user_id'] in self.join_map:
-                            user_info = self.join_map[msg_obj['user_id']]
-                            if user_info['group'] == 'left':
-                                self.spawn_soldier('left', user_info)
-                            else:
-                                self.spawn_soldier('right', user_info)
-
-                    elif msg_obj['code'] == MSG_CODE_DONATION:
-                        print("[%s] dontaion: %d" %(msg_obj['nickname'], msg_obj['coin']))
-                        
-                        # 사용자의 팀 확인
-                        # 맵에서 가져올때 null 확인
-                        user_id = msg_obj['user_id']
-
-                        # must - 도네이션 애니메이션만 출력
-                        self.donation_queue.append(msg_obj)
-
-                        # 플레이 상태라면
-                        if self.state == GAME_STATE_PLAYING:
-                            # 팀확인
-                            # 도네이션 액수 확인
-                            # 스킬 시전
-                            diamondCnt = msg_obj['coin']
-                            if diamondCnt >= 1 and diamondCnt < 5:                                
-                                if msg_obj['user_id'] in self.join_map:                                    
-                                    user_info = self.join_map[msg_obj['user_id']]
-                                    if user_info['group'] == 'left':                
-                                        self.spell_lightning('left')
-                                    else:
-                                        self.spell_lightning('right')                                
-                            elif diamondCnt >= 5 and diamondCnt < 10:
-                                # 솔져 소환 x5
-                                # 시간 간격 두고 소환                                
-                                if msg_obj['user_id'] in self.join_map:                                    
-                                    print("[SPAWN 5 Soldiers]")                                                                        
-                                    user_info = self.join_map[msg_obj['user_id']]
-
-                                    for i in range(1,6):
-                                        self.spawn_soldier(user_info['group'], user_info)
-
-                                       
-                            elif diamondCnt >= 10 and diamondCnt < 30:
-                                # 나이트 소환
-                                if msg_obj['user_id'] in self.join_map:
-                                    user_info = self.join_map[msg_obj['user_id']]
-                                    if user_info['group'] == 'left':                
-                                        self.spawn_knight('left', user_info)
-                                    else:
-                                        self.spawn_knight('right', user_info)
-                            elif diamondCnt >= 30 and diamondCnt < 50:
-                                # 참여 팀 확인
-                                # 해당 팀의 castle 체력 증가
-                                # TODO: 효과음 재생
-                                if msg_obj['user_id'] in self.join_map:
-                                    user_info = self.join_map[msg_obj['user_id']]
-                                    if user_info['group'] == 'left':                
-                                        self.left_castle.hp = self.left_castle.hp_max
-                                    else:
-                                        self.right_castle.hp = self.right_castle.hp_max
-                                    
-                            elif diamondCnt >= 50:
-                                if msg_obj['user_id'] in self.join_map:
-                                    user_info = self.join_map[msg_obj['user_id']]
-                                    if user_info['group'] == 'left':                
-                                        self.spell_devil('left')
-                                    else:
-                                        self.spell_devil('right')                                    
-                    elif msg_obj['code'] == MSG_CODE_SHARE:
-                        pass                    
-                    
+                break            
             else:
                 pass
                 #print("event", event)
@@ -857,7 +690,6 @@ class Game:
                 # 이미 팀에 포함 되어 있는지 확인
                 if msg_obj['user_id'] in self.join_map:
                     # 1.이미 팀에 포함되어 있다면 and 해당 사용자의 유닛이 살아 있다면 => 채팅 출력
-                    # TODO: 해당 sprite에 채팅 메시지를 설정하고 채팅 출력 상태를 True로 변경해준다.
                     #print("[%s]: %s" % (msg_obj['nickname'], msg_obj['comment']))
                     user_info = self.join_map[msg_obj['user_id']]
                     #print("%s spawn %d units." % (user_info['nickname'], len(user_info['spawn_units'])))
@@ -875,8 +707,7 @@ class Game:
 
                     #print(chardet.detect(msg_obj['nickname'].encode()))
                     #print(chardet.detect(msg_obj['comment'].encode()))                                
-                    try:
-                        
+                    try:                        
                         nick = msg_obj['nickname']
                         com = msg_obj['comment']
                         
@@ -886,8 +717,6 @@ class Game:
 
                         #print("UTF[%s]: %s" % (msg_obj['nickname'].encode(encoding='UTF-8'), msg_obj['comment']))                                                               
                         #print("Windows-1253[%s]: %s" % (msg_obj['nickname'].encode(encoding='Windows-1253'), msg_obj['comment']))
-                        
-                    
                     except Exception as e:
                         print(e)
 
@@ -897,13 +726,13 @@ class Game:
                         msg_obj['spawn_units'] = pygame.sprite.Group()
                         self.join_map[msg_obj['user_id']] = msg_obj      
                         self.join_queue.append(self.join_map[msg_obj['user_id']])                                                     
-                        #self.spawn_soldier('left')
+                                                      
                     elif msg_obj['comment'].find(self.right_name) != -1:
                         msg_obj['group'] = 'right'
                         msg_obj['spawn_units'] = pygame.sprite.Group()
                         self.join_map[msg_obj['user_id']] = msg_obj
                         self.join_queue.append(self.join_map[msg_obj['user_id']])
-                        #self.spawn_soldier('right')                               
+                                       
 
                     
             elif msg_obj['code'] == MSG_CODE_LIKE and self.state == GAME_STATE_PLAYING:
@@ -924,6 +753,7 @@ class Game:
                                 self.spawn_knight('left', user_info)
                             else:
                                 self.spawn_knight('right', user_info)
+                            self.print_log_msg('%s님이 기사를 소환했습니다.'%(user_info['nickname']), user_info['profile'])
                     
                     rand_int = random.randint(0, 9)
                     if rand_int == 1 and is_knight == False:
@@ -940,6 +770,7 @@ class Game:
                         self.spawn_soldier('left', user_info)
                     else:
                         self.spawn_soldier('right', user_info)
+                    self.print_log_msg('%s님이 일반 병사를 소환했습니다.'%(user_info['nickname']), user_info['profile'])
 
             elif msg_obj['code'] == MSG_CODE_DONATION:
                 print("[%s] dontaion: %d" %(msg_obj['nickname'], msg_obj['coin']))
@@ -991,6 +822,8 @@ class Game:
                                 self.spawn_knight('left', user_info)
                             else:
                                 self.spawn_knight('right', user_info)
+                            self.print_log_msg('%s님이 기사를 소환했습니다.'%(user_info['nickname']), user_info['profile'])
+                            
                     elif diamondCnt >= 30 and diamondCnt < 50:
                         # 참여 팀 확인
                         # 해당 팀의 castle 체력 증가
@@ -1105,6 +938,11 @@ class Game:
                 image = self.get_cropped_image(user_id, img_url, self.profile_size)
                 user_info['profile'] = image               
                 self.join_map[user_id] = user_info
+
+                if group == 'left':
+                    self.print_log_msg('%s님이 %s에 참여했습니다.'%(user_info['nickname'], self.left_name), user_info['profile'])  
+                else:
+                    self.print_log_msg('%s님이 %s에 참여했습니다.'%(user_info['nickname'], self.right_name), user_info['profile'])  
 
                 # 사용자 닉네임과 이미지와 함께 유닛(솔져) 생성
                 spawn_soldier = self.spawn_soldier(group, user_info)
@@ -1281,8 +1119,6 @@ class Game:
             user_info['spawn_units'].add(new_soldier)
             self.join_map[user_info['user_id']] = user_info
 
-            self.print_log_msg('%s님이 일반 병사를 소환했습니다.'%(user_info['nickname']), profile_img)
-
 
     def spawn_soldier_xy(self, group, user_info, xy):
         #print("[spawn_soldier]:%s, %s"%(group, user_info))
@@ -1350,8 +1186,6 @@ class Game:
             user_info = self.join_map[user_info['user_id']]
             user_info['spawn_units'].add(new_knight)
             self.join_map[user_info['user_id']] = user_info
-
-            self.print_log_msg('%s님이 기사를 소환했습니다.'%(user_info['nickname']), profile_img)
         
             
     ####### SKILL LOGIC #######
