@@ -173,8 +173,8 @@ class SoldierSprite(pygame.sprite.Sprite, BaseObject):
             name = self.name
             if len(self.name) > 10:
                 name = self.name[0:10]
-                
-            nickname_text = self.game.arialbd_font_13.render(name, True, self.game.COLOR_BLACK)
+
+            nickname_text = self.game.main_font_13.render(name, True, self.game.COLOR_BLACK)
             nickname_text_rect = nickname_text.get_rect()
             nickname_text_size = nickname_text_rect.size            
             nickname_text_rect.centerx = self.rect.centerx            
@@ -375,7 +375,12 @@ class KnightSprite(pygame.sprite.Sprite, BaseObject):
             nickname_text_size = nickname_text_rect.size            
             nickname_text_rect.centerx = self.rect.centerx            
             self_size_y = self.rect.size[1]
-            self.game.SCREEN.blit(nickname_text, (nickname_text_rect.x, self.rect.y + self_size_y + 2))
+            nick_xy = (nickname_text_rect.x, self.rect.y + self_size_y + 2)
+            self.game.SCREEN.blit(nickname_text, nick_xy)
+
+            # 프로필 출력
+            if self.profile != None:
+                self.game.SCREEN.blit(self.profile, (nickname_text_rect.x - self.game.profile_size[0] - 5, nick_xy[1] - (self.game.profile_size[1] * 0.2)))
 
         # 체력바 그리기
         if self.hp < self.hp_max:

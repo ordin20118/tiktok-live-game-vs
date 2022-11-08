@@ -33,8 +33,11 @@ GAME_STATE_OVER = 4
 FPS = 60
 
 # 스크린 전체 크기 지정
-SCREEN_WIDTH = 598
+#SCREEN_WIDTH = 598
+SCREEN_WIDTH = 570
 SCREEN_HEIGHT = 1060
+
+
 # second setting
 # SCREEN_WIDTH = 475
 # SCREEN_HEIGHT = 844
@@ -50,6 +53,8 @@ RIGHT_CASTLE_POSITION = (SCREEN_WIDTH - 85, LAND_TOP_HEIGHT)
 
 LEFT_SPAWN_POSITION = (SCREEN_WIDTH * 0.01, LAND_TOP_HEIGHT + 100)
 RIGHT_SPAWN_POSITION = (SCREEN_WIDTH - (SCREEN_WIDTH * 0.07), LAND_TOP_HEIGHT + 100)
+
+LOG_POSITION = (SCREEN_WIDTH * 0.6, SCREEN_HEIGHT * 0.4)
 
 MAX_SKILL_COUNT = 5
 
@@ -151,11 +156,15 @@ class Game:
         #self.menu_size = (150, 150)
         self.donation_size = (SCREEN_WIDTH / 7, SCREEN_WIDTH / 7)
         self.profile_size = (SCREEN_WIDTH / 25, SCREEN_WIDTH / 25)
+        self.log_profile_size = (SCREEN_WIDTH / 50, SCREEN_WIDTH / 50)
         self.soldier_size = (60, 60)
         self.knight_size = (90, 90)
         self.lightning_size = (100, 268)
         self.devil_size = (400, 400)
         self.castle_size = (100, 180)
+
+        print(self.profile_size)
+        print(self.log_profile_size)
 
 
         # 리소스 불러오기
@@ -516,7 +525,7 @@ class Game:
                 rank_text_rect.x = rank_rect_fill.x + (SCREEN_WIDTH * 0.03)
 
                 interval = r['rank'] * 9 + (r['rank'] * 15)
-                self.SCREEN.blit(rank_text, (rank_text_rect.x, (rank_rect_y + 15 + text_rank_title_rect.height) + interval))
+                self.SCREEN.blit(rank_text, (rank_text_rect.x, (rank_rect_y + 15 + text_rank_title_rect.height*0.5) + interval))
                 if idx == 9:
                     break
 
@@ -526,7 +535,7 @@ class Game:
                 rank_text_rect.x = rank_rect_fill.x + 10 + SCREEN_WIDTH * 0.21
 
                 interval = (r['rank'] - 10) * 9 + ((r['rank'] - 10) * 15)
-                self.SCREEN.blit(rank_text, (rank_text_rect.x, (rank_rect_y + 15 + text_rank_title_rect.height) + interval))
+                self.SCREEN.blit(rank_text, (rank_text_rect.x, (rank_rect_y + 15 + text_rank_title_rect.height*0.5) + interval))
                 
                     
 
@@ -752,7 +761,7 @@ class Game:
                                 if user_info['group'] == 'left':
                                     self.spell_lightning('left')
                                 else:
-                                    self.spell_lightning('right')
+                                    self.spell_lightning('right')                                
 
                         elif msg_obj['like_count'] >= 5 and msg_obj['user_id'] in self.join_map:
                             user_info = self.join_map[msg_obj['user_id']]
@@ -788,11 +797,13 @@ class Game:
                                 # 솔져 소환 x5
                                 # 시간 간격 두고 소환                                
                                 if msg_obj['user_id'] in self.join_map:                                    
-                                    print("[SPAWN 5 Soldiers]")                                    
-                                    
-                                    user_info = self.join_map[msg_obj['user_id']]                                      
-                                    for i in range(0,5):
+                                    print("[SPAWN 5 Soldiers]")                                                                        
+                                    user_info = self.join_map[msg_obj['user_id']]
+
+                                    for i in range(1,6):
                                         self.spawn_soldier(user_info['group'], user_info)
+
+                                       
                             elif diamondCnt >= 10 and diamondCnt < 30:
                                 # 나이트 소환
                                 if msg_obj['user_id'] in self.join_map:
@@ -811,13 +822,14 @@ class Game:
                                         self.left_castle.hp = self.left_castle.hp_max
                                     else:
                                         self.right_castle.hp = self.right_castle.hp_max
+                                    
                             elif diamondCnt >= 50:
                                 if msg_obj['user_id'] in self.join_map:
                                     user_info = self.join_map[msg_obj['user_id']]
                                     if user_info['group'] == 'left':                
                                         self.spell_devil('left')
                                     else:
-                                        self.spell_devil('right')
+                                        self.spell_devil('right')                                    
                     elif msg_obj['code'] == MSG_CODE_SHARE:
                         pass                    
                     
@@ -825,6 +837,181 @@ class Game:
                 pass
                 #print("event", event)
         asyncio.get_event_loop().stop()
+
+    def ws_msg_process(self, message):
+        msg_obj = None
+        try:
+            msg_obj = json.loads(message)
+            #print("[[ Message Object ]]")                    
+            #print(msg_obj)
+        except Exception as e:
+            print("[error]:%s" % e)
+            raise
+        
+        # 도네이션의 경우 무조건 넘겨준다.
+        # 다른 이벤트는 state가 playing이 아니라면 패스
+
+        if msg_obj != None:
+            if msg_obj['code'] == MSG_CODE_COMMENT and self.state == GAME_STATE_PLAYING:
+                # 채팅에 팀 이름 포함 여부 확인
+                # 이미 팀에 포함 되어 있는지 확인
+                if msg_obj['user_id'] in self.join_map:
+                    # 1.이미 팀에 포함되어 있다면 and 해당 사용자의 유닛이 살아 있다면 => 채팅 출력
+                    # TODO: 해당 sprite에 채팅 메시지를 설정하고 채팅 출력 상태를 True로 변경해준다.
+                    #print("[%s]: %s" % (msg_obj['nickname'], msg_obj['comment']))
+                    user_info = self.join_map[msg_obj['user_id']]
+                    #print("%s spawn %d units." % (user_info['nickname'], len(user_info['spawn_units'])))
+                    if len(user_info['spawn_units']) > 0:
+                        #user_info['spawn_units'][0].chat = msg_obj['comment']
+                        for idx, unit in enumerate(user_info['spawn_units']):                                        
+                            if idx == 0:                    
+                                unit.chat = msg_obj['comment']
+                                break
+                    
+                else:
+                    # 2. 포함되어 있지 않다면 
+                    # => 팀에 포함 + 유닛 생성
+                    print("[%s]: %s" % (msg_obj['nickname'], msg_obj['comment']))
+
+                    #print(chardet.detect(msg_obj['nickname'].encode()))
+                    #print(chardet.detect(msg_obj['comment'].encode()))                                
+                    try:
+                        
+                        nick = msg_obj['nickname']
+                        com = msg_obj['comment']
+                        
+                        #nick_encoded = nick.encode('utf-8')
+                        #print("nick[%s]/utf-encode[%s]"%(nick, nick_encoded))
+                        #print("nick[%s]/unicode-escape[%s]"%(nick, nick_encoded.decode('unicode_escape')))
+
+                        #print("UTF[%s]: %s" % (msg_obj['nickname'].encode(encoding='UTF-8'), msg_obj['comment']))                                                               
+                        #print("Windows-1253[%s]: %s" % (msg_obj['nickname'].encode(encoding='Windows-1253'), msg_obj['comment']))
+                        
+                    
+                    except Exception as e:
+                        print(e)
+
+
+                    if msg_obj['comment'].find(self.left_name) != -1:
+                        msg_obj['group'] = 'left'
+                        msg_obj['spawn_units'] = pygame.sprite.Group()
+                        self.join_map[msg_obj['user_id']] = msg_obj      
+                        self.join_queue.append(self.join_map[msg_obj['user_id']])                                                     
+                        #self.spawn_soldier('left')
+                    elif msg_obj['comment'].find(self.right_name) != -1:
+                        msg_obj['group'] = 'right'
+                        msg_obj['spawn_units'] = pygame.sprite.Group()
+                        self.join_map[msg_obj['user_id']] = msg_obj
+                        self.join_queue.append(self.join_map[msg_obj['user_id']])
+                        #self.spawn_soldier('right')                               
+
+                    
+            elif msg_obj['code'] == MSG_CODE_LIKE and self.state == GAME_STATE_PLAYING:
+                print("[%s] likes count: %d" %(msg_obj['nickname'], msg_obj['like_count']))
+                #unit_count = int(msg_obj['like_count'] / 5)
+                #self.donation_queue.append(msg_obj)
+
+                if msg_obj['like_count'] >= 15 and msg_obj['user_id'] in self.join_map:
+                    
+                    is_knight = False
+                    rand_int = random.randint(0, 99)
+                    if rand_int == 1:
+                        is_knight = True
+                        # 나이트 소환
+                        if msg_obj['user_id'] in self.join_map:
+                            user_info = self.join_map[msg_obj['user_id']]
+                            if user_info['group'] == 'left':                
+                                self.spawn_knight('left', user_info)
+                            else:
+                                self.spawn_knight('right', user_info)
+                    
+                    rand_int = random.randint(0, 9)
+                    if rand_int == 1 and is_knight == False:
+                        user_info = self.join_map[msg_obj['user_id']]
+                        if user_info['group'] == 'left':
+                            self.spell_lightning('left')
+                        else:
+                            self.spell_lightning('right')
+                        self.print_log_msg('%s님이 번개를 사용했습니다.'%(user_info['nickname']), user_info['profile'])
+
+                elif msg_obj['like_count'] >= 5 and msg_obj['user_id'] in self.join_map:
+                    user_info = self.join_map[msg_obj['user_id']]
+                    if user_info['group'] == 'left':
+                        self.spawn_soldier('left', user_info)
+                    else:
+                        self.spawn_soldier('right', user_info)
+
+            elif msg_obj['code'] == MSG_CODE_DONATION:
+                print("[%s] dontaion: %d" %(msg_obj['nickname'], msg_obj['coin']))
+                
+                # 사용자의 팀 확인
+                # 맵에서 가져올때 null 확인
+                user_id = msg_obj['user_id']
+
+                # must - 도네이션 애니메이션만 출력
+                self.donation_queue.append(msg_obj)
+
+                # 플레이 상태라면
+                if self.state == GAME_STATE_PLAYING:
+                    # 팀확인
+                    # 도네이션 액수 확인
+                    # 스킬 시전
+                    diamondCnt = msg_obj['coin']
+                    if diamondCnt >= 1 and diamondCnt < 5:                                
+                        if msg_obj['user_id'] in self.join_map:                                    
+                            user_info = self.join_map[msg_obj['user_id']]
+                            if user_info['group'] == 'left':                
+                                self.spell_lightning('left')
+                            else:
+                                self.spell_lightning('right')     
+                            self.print_log_msg('%s님이 번개를 사용했습니다.'%(user_info['nickname']), user_info['profile'])                           
+                    elif diamondCnt >= 5 and diamondCnt < 10:
+                        # 솔져 소환 x5
+                        # 시간 간격 두고 소환         
+                        # TODO: 위치 치정                       
+                        if msg_obj['user_id'] in self.join_map:                                    
+                            #print("[SPAWN 5 Soldiers]")                                                                
+                            user_info = self.join_map[msg_obj['user_id']]            
+                            self.print_log_msg('%s님이 일반 병사 5 소환.'%(user_info['nickname']), user_info['profile'])
+
+                            for i in range(1,6):
+                                xy = None
+                                if user_info['group'] == 'right':
+                                    xy = (RIGHT_SPAWN_POSITION[0] + (i * 50), RIGHT_SPAWN_POSITION[1])
+                                else:
+                                    xy = (LEFT_SPAWN_POSITION[0] - (i * 50), LEFT_SPAWN_POSITION[1])
+
+                                self.spawn_soldier_xy(user_info['group'], user_info, xy)
+
+                    elif diamondCnt >= 10 and diamondCnt < 30:
+                        # 나이트 소환
+                        if msg_obj['user_id'] in self.join_map:
+                            user_info = self.join_map[msg_obj['user_id']]
+                            if user_info['group'] == 'left':                
+                                self.spawn_knight('left', user_info)
+                            else:
+                                self.spawn_knight('right', user_info)
+                    elif diamondCnt >= 30 and diamondCnt < 50:
+                        # 참여 팀 확인
+                        # 해당 팀의 castle 체력 증가
+                        # TODO: 효과음 재생
+                        if msg_obj['user_id'] in self.join_map:
+                            user_info = self.join_map[msg_obj['user_id']]
+                            if user_info['group'] == 'left':                
+                                self.left_castle.hp = self.left_castle.hp_max
+                            else:
+                                self.right_castle.hp = self.right_castle.hp_max
+                            self.print_log_msg('%s님이 회복을 사용했습니다.'%(user_info['nickname']), user_info['profile'])
+                    elif diamondCnt >= 50:
+                        if msg_obj['user_id'] in self.join_map:
+                            user_info = self.join_map[msg_obj['user_id']]
+                            if user_info['group'] == 'left':                
+                                self.spell_devil('left')
+                            else:
+                                self.spell_devil('right')
+                            self.print_log_msg('%s님이 악마를 사용했습니다.'%(user_info['nickname']), user_info['profile'])
+            elif msg_obj['code'] == MSG_CODE_SHARE:
+                pass 
 
 
 
@@ -852,8 +1039,9 @@ class Game:
                 try:
                     msg_rcv = await websocket.recv();
                     #print('\n\n[%s] %s' % (now, msg_rcv))
-                    new_event = pygame.event.Event(EVENT_SOCKET_MSG, message=msg_rcv)    
-                    await event_queue.put(new_event) 
+                    #new_event = pygame.event.Event(EVENT_SOCKET_MSG, message=msg_rcv)    
+                    #await event_queue.put(new_event) 
+                    self.ws_msg_process(msg_rcv)
                 except Exception as e:
                     print(e)
                 
@@ -971,12 +1159,12 @@ class Game:
 
                 # use PIL
                 pil_img = Image.open(io.BytesIO(image_str))
-                
+
                 height,width = pil_img.size
-                lum_img = Image.new('L', [height,width] , 0)
+                lum_img = Image.new('L', [height, width] , 0)
                 
                 draw = ImageDraw.Draw(lum_img)
-                draw.pieslice([(0,0), (height,width)], 0, 360, 
+                draw.pieslice([(0,0), (height - 3,width - 3)], 0, 360, 
                             fill = 255, outline = "white")
                 img_arr =np.array(pil_img)
                 lum_img_arr =np.array(lum_img)                    
@@ -986,9 +1174,10 @@ class Game:
 
                 # 캐시 파일 저장
                 final_pil_img.save(cache_path, 'png')
-                image = pygame.transform.scale(pygame.image.load(cache_path), self.donation_size)
-            except:
-                image = pygame.transform.scale(pygame.image.load('game/res/default.png'), self.donation_size)
+                image = pygame.transform.scale(pygame.image.load(cache_path), size)
+            except Exception as e:
+                print(e)
+                image = pygame.transform.scale(pygame.image.load('game/res/default.png'), size)
 
         return image
 
@@ -1035,7 +1224,7 @@ class Game:
                             lum_img = Image.new('L', [height,width] , 0)
                             
                             draw = ImageDraw.Draw(lum_img)
-                            draw.pieslice([(0,0), (height,width)], 0, 360, 
+                            draw.pieslice([(0,0), (height - 3, width - 3)], 0, 360, 
                                         fill = 255, outline = "white")
                             img_arr =np.array(pil_img)
                             lum_img_arr =np.array(lum_img)                    
@@ -1071,8 +1260,7 @@ class Game:
         if user_info != None:
             ch_name = user_info['nickname']
             if 'profile' in user_info:
-                profile_img = user_info['profile']
-                
+                profile_img = user_info['profile']                
 
         new_soldier = None
         if group == 'right':
@@ -1080,8 +1268,42 @@ class Game:
                                                 hp=150, power=1, name=ch_name, profile=profile_img, images=soldier_images_right, game=self)
             self.right_group.add(new_soldier)
             self.sprite_group.add(new_soldier)
+
         elif group == 'left':
             new_soldier = characters.SoldierSprite(size=self.soldier_size, position=LEFT_SPAWN_POSITION, movement=(1,0), state=1, group='left', 
+                                            hp=150, power=1, name=ch_name, profile=profile_img, images=soldier_images_left, game=self)
+            self.left_group.add(new_soldier)
+            self.sprite_group.add(new_soldier)
+            
+
+        if user_info != None and new_soldier != None:
+            user_info = self.join_map[user_info['user_id']]
+            user_info['spawn_units'].add(new_soldier)
+            self.join_map[user_info['user_id']] = user_info
+
+            self.print_log_msg('%s님이 일반 병사를 소환했습니다.'%(user_info['nickname']), profile_img)
+
+
+    def spawn_soldier_xy(self, group, user_info, xy):
+        #print("[spawn_soldier]:%s, %s"%(group, user_info))
+
+        ch_name = "%s_soldier"%group
+        profile_img = None
+
+        if user_info != None:
+            ch_name = user_info['nickname']
+            if 'profile' in user_info:
+                profile_img = user_info['profile']
+                
+
+        new_soldier = None
+        if group == 'right':
+            new_soldier = characters.SoldierSprite(size=self.soldier_size, position=xy, movement=(-1,0), state=1, group='right', 
+                                                hp=150, power=1, name=ch_name, profile=profile_img, images=soldier_images_right, game=self)
+            self.right_group.add(new_soldier)
+            self.sprite_group.add(new_soldier)
+        elif group == 'left':
+            new_soldier = characters.SoldierSprite(size=self.soldier_size, position=xy, movement=(1,0), state=1, group='left', 
                                             hp=150, power=1, name=ch_name, profile=profile_img, images=soldier_images_left, game=self)
             self.left_group.add(new_soldier)
             self.sprite_group.add(new_soldier)
@@ -1128,6 +1350,8 @@ class Game:
             user_info = self.join_map[user_info['user_id']]
             user_info['spawn_units'].add(new_knight)
             self.join_map[user_info['user_id']] = user_info
+
+            self.print_log_msg('%s님이 기사를 소환했습니다.'%(user_info['nickname']), profile_img)
         
             
     ####### SKILL LOGIC #######
@@ -1163,6 +1387,11 @@ class Game:
                                                 hp=100, power=100000, name='%s_devil'%group_name, skill_type=2, images=devil_images, animation_count=6, sound=self.sound_map['devil'], game=self)
         self.skill_group.add(new_lightning)
         self.sprite_group.add(new_lightning)
+
+
+    def print_log_msg(self, msg, profile):
+        new_log = ui.LogSprite(size=self.profile_size, position=LOG_POSITION, msg=msg, profile=profile, game=self)
+        self.sprite_group.add(new_log)
 
 
     def set_tiles(self):        

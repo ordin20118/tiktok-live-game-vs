@@ -106,4 +106,48 @@ class DonationSprite(pygame.sprite.Sprite):
                 self.game.donation_state = True
                 self.kill()    
                 return
+
+class LogSprite(pygame.sprite.Sprite):
+
+    # state
+    # 0: none
+    # 1: can't use
+    def __init__(self, size, position, msg, profile, game):
+
+        super(LogSprite, self).__init__()
+
+        self.game = game
+        self.msg = msg
+        self.state = 0
+        self.rect = pygame.Rect(position, size)        
+        self.img_index = 0
+        self.image = profile
+        self.animation_time = 1.3
+        self.current_time = 0       
+
+    def draw(self, mt):
+        log_text = self.game.main_font_11.render(self.msg, True, self.game.COLOR_GREY_LIGHT)            
+        log_text_rect = log_text.get_rect()
+        log_text_rect.x = self.rect.x + self.game.profile_size[0] + 5
+                
+        self.game.SCREEN.blit(log_text, (log_text_rect.x, self.rect.y + (self.game.profile_size[1] * 0.2)))
+        
+        # coin_text = self.game.main_font_11.render('%d Coin' % self.coin, True, self.game.COLOR_YELLOW)            
+        # coin_text_rect = coin_text.get_rect()        
+        # name_text_size = coin_text_rect.size
+        # coin_text_rect.centerx = self.rect.centerx
+        # self.game.SCREEN.blit(coin_text, (coin_text_rect.x, self.rect.y + self.rect.size[1] + name_text_rect.size[1] + 10))
+
+    def draw_back(self):
+        pass
+        #pygame.draw.rect(self.game.SCREEN, (131, 133, 131), [self.rect.x, self.rect.y, self.rect.size[0], self.rect.size[1]], border_radius=5)
+
+    def update(self, mt, game):
+        # TODO: 일정 시간(1.3초) 후 사라짐
+        self.current_time += mt      
+        self.rect.y -= 0.5  
+        if self.current_time >= self.animation_time:
+            self.current_time = 0
+            self.kill()           
+                
         
