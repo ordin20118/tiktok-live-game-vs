@@ -95,7 +95,7 @@ class DonationSprite(pygame.sprite.Sprite):
         #pygame.draw.rect(self.game.SCREEN, (131, 133, 131), [self.rect.x, self.rect.y, self.rect.size[0], self.rect.size[1]], border_radius=5)
 
     def update(self, mt, game):
-        # TODO: 일정 시간(1.3초) 후 사라짐
+        # 일정 시간(1.3초) 후 사라짐
         self.current_time += mt
         if self.current_time >= self.animation_time:
             self.current_time = 0

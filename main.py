@@ -67,6 +67,7 @@ MSG_CODE_LIKE = 2
 MSG_CODE_DONATION = 3
 MSG_CODE_SHARE = 4
 MSG_CODE_SET_CANDIDATES = 5
+MSG_CODE_NOTICE = 6
 
 # 게임 플레이 설정
 SPRITE_TYPE_CHARACTER = 1
@@ -124,8 +125,12 @@ class Game:
         self.main_font_30 = pygame.font.Font("game/res/font/NanumBarunGothic.ttf", 30)   
         self.main_font_20 = pygame.font.Font("game/res/font/NanumBarunGothic.ttf", 20) 
         self.main_font_15 = pygame.font.Font("game/res/font/NanumBarunGothic.ttf", 15) 
+        self.main_font_14 = pygame.font.Font("game/res/font/NanumBarunGothic.ttf", 14) 
         self.main_font_13 = pygame.font.Font("game/res/font/NanumBarunGothic.ttf", 13) 
-        self.main_font_11 = pygame.font.Font("game/res/font/NanumBarunGothic.ttf", 11) 
+        self.main_font_11 = pygame.font.Font("game/res/font/NanumBarunGothic.ttf", 11)
+
+        self.main_bold_font_14 = pygame.font.Font("game/res/font/NanumBarunGothicBold.ttf", 14) 
+        self.main_bold_font_13 = pygame.font.Font("game/res/font/NanumBarunGothicBold.ttf", 13) 
 
         self.arialbd_font_13 = pygame.font.Font("game/res/font/arialbd.ttf", 13) 
         
@@ -136,12 +141,14 @@ class Game:
         self.message_queue = []     # 웹소켓 전송 메시지큐
         self.join_queue = []        # 게임 참여 큐
         self.donation_queue = []    # 도네이션 큐
+        self.notice_queue = []    # 공지사항 큐
         
         ### 시간 관련 변수 ###
         self.auto_player_spawn_term = 500 # 160      자동 플레이어 생성 주기
         self.auto_player_spawn_time = 0   #          자동 플레이어 생성 딜레이 시간
-        self.game_timer_term = 60 * 7    # 게임 플레이 제한 시간 - 240초 => 4분
-        self.test_count = 0
+        self.game_timer_term = 60 * 7     # 게임 플레이 제한 시간 - 240초 => 4분
+        self.notice_term = 5              # 공지 노출 시간(단위:s)
+        self.notice_time = 0              # 현재 공지 노출된 시간 
 
         # sprite group 설정
         self.sprite_group = pygame.sprite.Group()
@@ -162,9 +169,6 @@ class Game:
         self.lightning_size = (100, 268)
         self.devil_size = (400, 400)
         self.castle_size = (100, 180)
-
-        print(self.profile_size)
-        print(self.log_profile_size)
 
 
         # 리소스 불러오기
@@ -232,9 +236,18 @@ class Game:
         self.join_map = {}
         self.left_name = ""
         self.right_name = ""
+        self.now_notice = None
         self.donation_state = True
+        self.notice_state = True
         self.destroyed_castle = None    # 파괴된 성
-        
+
+
+        self.invalid_join_cnt = 0       # 현재 경기 진행중이지 않은 지역을 계속해서 입력하는 경우의 수
+        self.none_join_like_cnt = 0     # 참가 하지않고 좋아요만 누른 경우의 수
+        self.duplicate_join_cnt = 0     # 참가 메시지를 계속해서 입력하는 경우의 수
+        self.invalid_join_limit = 10
+        self.none_join_like_limit = 10
+        self.duplicate_join_limit = 10
 
         self.state = GAME_STATE_READY
         print("[[ END INIT GAME ]]")
@@ -469,39 +482,46 @@ class Game:
             desc_rect_x = SCREEN_WIDTH * 0.08
             desc_rect_y = desc_rect_x
             desc_rect_width = SCREEN_WIDTH * 0.43
-            desc_rect_fill = pygame.draw.rect(self.SCREEN, (255, 255, 228), [desc_rect_x+3, desc_rect_y+3, desc_rect_width-6, desc_rect_width * 0.7 - 6], 
+            desc_rect_fill = pygame.draw.rect(self.SCREEN, (255, 255, 228), [desc_rect_x+3, desc_rect_y+3, desc_rect_width-6, desc_rect_width * 0.8 - 6], 
                                         border_radius=0, border_top_left_radius=5, border_top_right_radius=5, border_bottom_left_radius=5, border_bottom_right_radius=5)
-            desc_rect_border = pygame.draw.rect(self.SCREEN, (153, 56, 0), [desc_rect_x, desc_rect_y, desc_rect_width, desc_rect_width * 0.7], 
+            desc_rect_border = pygame.draw.rect(self.SCREEN, (153, 56, 0), [desc_rect_x, desc_rect_y, desc_rect_width, desc_rect_width * 0.8], 
                                         width=3, border_radius=0, border_top_left_radius=10, border_top_right_radius=10, border_bottom_left_radius=10, border_bottom_right_radius=10)
 
             # 참가 설명 텍스트
-            text_join_title = self.main_font_15.render("[ 참가 ]", True, self.COLOR_BLACK)
+            text_join_title = self.main_font_15.render("[ 참가 방법 ]", True, self.COLOR_BLACK)
             text_join_title_rect = text_join_title.get_rect()
             text_join_title_rect.centerx = desc_rect_fill.centerx
-            text_join_desc = self.main_font_11.render("양쪽 진영 중 참가하려는 진영 이름 채팅으로 입력", True, self.COLOR_BLACK)
+            
+            text_join_desc = self.main_font_13.render("현재 경기중인 지역 2개중에서", True, self.COLOR_BLACK)
             text_join_desc_rect = text_join_desc.get_rect()
-            text_join_desc_rect.centerx = desc_rect_fill.centerx            
+            text_join_desc_rect.centerx = desc_rect_fill.centerx        
+
+            text_join_desc2 = self.main_font_13.render("참가하려는 지역 이름을 채팅으로 입력", True, self.COLOR_BLACK)
+            text_join_desc_rect2 = text_join_desc2.get_rect()
+            text_join_desc_rect2.centerx = desc_rect_fill.centerx   
+
             self.SCREEN.blit(text_join_title, (text_join_title_rect.x, desc_rect_y + 15))
             self.SCREEN.blit(text_join_desc, (text_join_desc_rect.x, desc_rect_y + 35))
+            self.SCREEN.blit(text_join_desc2, (text_join_desc_rect2.x, desc_rect_y + 55))
             
             # 유닛 추가 설명 텍스트
             text_join_title = self.main_font_15.render("[ 참가 후 유닛 추가 ]", True, self.COLOR_BLACK)
             text_join_title_rect = text_join_title.get_rect()
             text_join_title_rect.centerx = desc_rect_fill.centerx
-            text_join_desc = self.main_font_13.render("화면 탭 x 5 => 1 Soldier", True, self.COLOR_BLACK)
+            text_join_desc = self.main_font_13.render("likes x 5 => 1 Soldier", True, self.COLOR_BLACK)
             text_join_desc_rect = text_join_desc.get_rect()
             text_join_desc_rect.centerx = desc_rect_fill.centerx        
-            text_skill_desc = self.main_font_13.render("화면 탭 x 15 => 10% Lightning", True, self.COLOR_BLACK)
+            text_skill_desc = self.main_font_13.render("likes x 15 => 10% Lightning", True, self.COLOR_BLACK)
             text_skill_desc_rect = text_skill_desc.get_rect()
             text_skill_desc_rect.centerx = desc_rect_fill.centerx        
 
-            text_knight_desc = self.main_font_13.render("화면 탭 x 15 => 1% Knight", True, self.COLOR_BLACK)
+            text_knight_desc = self.main_font_13.render("likes x 15 => 1% Knight", True, self.COLOR_BLACK)
             text_knight_desc_rect = text_knight_desc.get_rect()
             text_knight_desc_rect.centerx = desc_rect_fill.centerx        
-            self.SCREEN.blit(text_join_title, (text_join_title_rect.x, desc_rect_y + 65))
-            self.SCREEN.blit(text_join_desc, (text_join_desc_rect.x, desc_rect_y + 88))
-            self.SCREEN.blit(text_skill_desc, (text_skill_desc_rect.x, desc_rect_y + 111))
-            self.SCREEN.blit(text_knight_desc, (text_knight_desc_rect.x, desc_rect_y + 134))
+            self.SCREEN.blit(text_join_title, (text_join_title_rect.x, desc_rect_y + 95))
+            self.SCREEN.blit(text_join_desc, (text_join_desc_rect.x, desc_rect_y + 118))
+            self.SCREEN.blit(text_skill_desc, (text_skill_desc_rect.x, desc_rect_y + 141))
+            self.SCREEN.blit(text_knight_desc, (text_knight_desc_rect.x, desc_rect_y + 164))
 
             # 랭킹 정보 출력
             rank_rect_x = SCREEN_WIDTH * 0.54
@@ -538,6 +558,12 @@ class Game:
                 self.SCREEN.blit(rank_text, (rank_text_rect.x, (rank_rect_y + 15 + text_rank_title_rect.height*0.5) + interval))
                 
                     
+            # 공지사항
+            if self.now_notice != None:
+                text_notice = self.main_bold_font_14.render(self.now_notice, True, self.COLOR_GREY_LIGHT)
+                text_notice_rect = text_notice.get_rect()
+                text_notice_rect.centerx = (SCREEN_WIDTH * 0.5)
+                self.SCREEN.blit(text_notice, (text_notice_rect.x, SCREEN_HEIGHT * 0.5))
 
 
 
@@ -689,21 +715,33 @@ class Game:
                 # 채팅에 팀 이름 포함 여부 확인
                 # 이미 팀에 포함 되어 있는지 확인
                 if msg_obj['user_id'] in self.join_map:
-                    # 1.이미 팀에 포함되어 있다면 and 해당 사용자의 유닛이 살아 있다면 => 채팅 출력
-                    #print("[%s]: %s" % (msg_obj['nickname'], msg_obj['comment']))
+                    # 1.이미 팀에 포함되어 있다면 and 해당 사용자의 유닛이 살아 있다면 => 채팅 출력                    
                     user_info = self.join_map[msg_obj['user_id']]
-                    #print("%s spawn %d units." % (user_info['nickname'], len(user_info['spawn_units'])))
                     if len(user_info['spawn_units']) > 0:
-                        #user_info['spawn_units'][0].chat = msg_obj['comment']
                         for idx, unit in enumerate(user_info['spawn_units']):                                        
                             if idx == 0:                    
                                 unit.chat = msg_obj['comment']
                                 break
                     
+                    # 이미 참가했는데 계속해서 참가 채팅을 치는 경우 도움말 공지사항 띄우기
+                    if msg_obj['comment'] == self.left_name or msg_obj['comment'] == self.right_name:
+                        self.duplicate_join_cnt += 1
+                        if self.duplicate_join_cnt >= self.duplicate_join_limit:
+                            self.notice_queue.append("유닛 추가와 스킬은 좋아요 또는 후원으로 사용 가능합니다.")
+                            self.duplicate_join_cnt = 0
+
+                    
                 else:
                     # 2. 포함되어 있지 않다면 
                     # => 팀에 포함 + 유닛 생성
                     print("[%s]: %s" % (msg_obj['nickname'], msg_obj['comment']))
+
+                    # 현재 진행중이지 않은 지역을 계속해서 입력하는 경우
+                    if msg_obj['comment'] != self.left_name and msg_obj['comment'] != self.right_name and msg_obj['comment'] in self.candidates:
+                        self.invalid_join_cnt += 1
+                        if self.invalid_join_cnt >= self.invalid_join_limit:
+                            self.notice_queue.append("현재 전투중인 지역 이름을 입력하여 참가해주세요.")
+                            self.invalid_join_limit = 0
 
                     #print(chardet.detect(msg_obj['nickname'].encode()))
                     #print(chardet.detect(msg_obj['comment'].encode()))                                
@@ -740,6 +778,16 @@ class Game:
                 #unit_count = int(msg_obj['like_count'] / 5)
                 #self.donation_queue.append(msg_obj)
 
+                # # 참가 하지않고 좋아요만 누르는 경우 안내 메시지 노출
+                if msg_obj['user_id'] in self.join_map:
+                    pass
+                else:
+                    self.none_join_like_cnt += 1
+                    if self.none_join_like_cnt >= self.none_join_like_limit:
+                        self.notice_queue.append("채팅으로 참여 후 좋아요로 유닛 추가가 가능합니다.")
+                        self.notice_queue.append("채팅으로 현재 대결중인 지역 이름을 입력하여 참가 가능합니다.")                        
+                        self.none_join_like_cnt = 0
+
                 if msg_obj['like_count'] >= 15 and msg_obj['user_id'] in self.join_map:
                     
                     is_knight = False
@@ -763,6 +811,15 @@ class Game:
                         else:
                             self.spell_lightning('right')
                         self.print_log_msg('%s님이 번개를 사용했습니다.'%(user_info['nickname']), user_info['profile'])
+
+                    rand_int = random.randint(0, 2)
+                    if rand_int == 1 and is_knight == False:
+                        user_info = self.join_map[msg_obj['user_id']]
+                        if user_info['group'] == 'left':
+                            self.spawn_soldier('left', user_info)
+                        else:
+                            self.spawn_soldier('right', user_info)
+                        self.print_log_msg('%s님이 일반 병사를 소환했습니다.'%(user_info['nickname']), user_info['profile'])
 
                 elif msg_obj['like_count'] >= 5 and msg_obj['user_id'] in self.join_map:
                     user_info = self.join_map[msg_obj['user_id']]
@@ -814,7 +871,7 @@ class Game:
 
                                 self.spawn_soldier_xy(user_info['group'], user_info, xy)
 
-                    elif diamondCnt >= 10 and diamondCnt < 30:
+                    elif diamondCnt >= 10 and diamondCnt < 20:
                         # 나이트 소환
                         if msg_obj['user_id'] in self.join_map:
                             user_info = self.join_map[msg_obj['user_id']]
@@ -823,8 +880,8 @@ class Game:
                             else:
                                 self.spawn_knight('right', user_info)
                             self.print_log_msg('%s님이 기사를 소환했습니다.'%(user_info['nickname']), user_info['profile'])
-                            
-                    elif diamondCnt >= 30 and diamondCnt < 50:
+
+                    elif diamondCnt >= 20 and diamondCnt < 30:
                         # 참여 팀 확인
                         # 해당 팀의 castle 체력 증가
                         # TODO: 효과음 재생
@@ -835,7 +892,7 @@ class Game:
                             else:
                                 self.right_castle.hp = self.right_castle.hp_max
                             self.print_log_msg('%s님이 회복을 사용했습니다.'%(user_info['nickname']), user_info['profile'])
-                    elif diamondCnt >= 50:
+                    elif diamondCnt >= 30:
                         if msg_obj['user_id'] in self.join_map:
                             user_info = self.join_map[msg_obj['user_id']]
                             if user_info['group'] == 'left':                
@@ -845,6 +902,9 @@ class Game:
                             self.print_log_msg('%s님이 악마를 사용했습니다.'%(user_info['nickname']), user_info['profile'])
             elif msg_obj['code'] == MSG_CODE_SHARE:
                 pass 
+            elif msg_obj['code'] == MSG_CODE_NOTICE:
+                self.notice_queue.append(msg_obj['msg'])
+                
 
 
 
@@ -891,7 +951,7 @@ class Game:
         socket_task = asyncio.ensure_future(self.connect_to_server(event_queue))
         img_task = asyncio.ensure_future(self.print_donation())
         join_task = asyncio.ensure_future(self.join_process())
-        
+        notice_task = asyncio.ensure_future(self.print_notice())        
         
         try:
             loop.run_forever()
@@ -907,6 +967,7 @@ class Game:
             img_task.cancel()
             end_check_task.cancel()
             join_task.cancel()
+            notice_task.cancel()
 
         pygame.quit()
 
@@ -1086,6 +1147,32 @@ class Game:
                 except Exception as e:
                     print("[print_donation error]:%s" % e)
                     del self.donation_queue[0]
+
+
+    async def print_notice(self):        
+        prev_tick = 0        
+        current_time = 0
+        while True:
+            last_time, current_time = current_time, time.time()
+            await asyncio.sleep(1 / FPS - (current_time - last_time))          
+            
+            now_tick = pygame.time.get_ticks()
+            tick_term = now_tick - prev_tick
+            if self.now_notice != None:  
+                self.notice_time += tick_term / 1000
+                prev_tick = now_tick
+                if self.notice_time >= self.notice_term:
+                    self.notice_time = 0
+                    self.now_notice = None
+                    self.notice_state = True
+
+            if len(self.notice_queue) > 0 and self.notice_state == True:
+                self.notice_state = False
+                self.now_notice = self.notice_queue[0]
+                self.notice_queue = self.notice_queue[1:]
+                prev_tick = pygame.time.get_ticks()
+
+
 
 
     ####### SPAWN LOGIC #######       
